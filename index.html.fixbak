@@ -1,0 +1,6113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+ <title>EMAN Developer Center</title>
+
+ <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232f5fe0'/%3E%3Ctext x='32' y='44' font-family='system-ui,sans-serif' font-size='30' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EEM%3C/text%3E%3C/svg%3E">
+
+ <meta name="color-scheme" content="light dark">
+
+ <script>
+ (function(){
+     try{
+         if(localStorage.getItem('eman_theme') === 'dark'){
+             document.documentElement.setAttribute('data-theme','dark');
+         }
+     }catch(err){}
+ })();
+ </script>
+
+ <!-- PWA -->
+ <link rel="manifest" href="manifest.webmanifest">
+ <meta name="theme-color" content="#2f5fe0">
+ <meta name="mobile-web-app-capable" content="yes">
+ <meta name="apple-mobile-web-app-capable" content="yes">
+ <meta name="apple-mobile-web-app-status-bar-style" content="default">
+ <meta name="apple-mobile-web-app-title" content="EMAN Center">
+ <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+ <!-- Konfigurasi Firebase + nama koleksi (lihat firebase-config.js) -->
+ <script src="firebase-config.js"></script>
+ 
+
+<style>
+/* ============================================================
+   EMAN DEVELOPER CENTER — Design System
+   Single-file, tanpa dependensi eksternal.
+   ============================================================ */
+
+:root{
+
+    /* ---------- Brand ---------- */
+    --brand:#2f5fe0;
+    --brand-strong:#1f47b8;
+    --brand-soft:#eaefff;
+    --brand-ring:rgba(47,95,224,.20);
+
+    /* ---------- Semantic ---------- */
+    --ok:#0f9d58;
+    --ok-soft:#e6f6ee;
+    --warn:#b8730a;
+    --warn-soft:#fdf3e2;
+    --bad:#d7404a;
+    --bad-soft:#fdecec;
+    --info:#2f5fe0;
+    --info-soft:#eaefff;
+    --mute:#5b6880;
+    --mute-soft:#eef1f7;
+
+    /* ---------- Surfaces ---------- */
+    --canvas:#f4f6fb;
+    --surface:#ffffff;
+    --surface-2:#fafbfe;
+    --sidebar-bg:#ffffff;
+    --topbar-bg:rgba(255,255,255,.86);
+    --border:#e6eaf3;
+    --border-2:#d7deeb;
+
+    /* ---------- Text ---------- */
+    --text:#0f1b2d;
+    --text-2:#5a6780;
+    --text-3:#8b97ad;
+
+    /* ---------- Elevation ---------- */
+    --shadow-xs:0 1px 2px rgba(15,27,45,.05);
+    --shadow-sm:0 1px 2px rgba(15,27,45,.05), 0 2px 8px -2px rgba(15,27,45,.08);
+    --shadow-md:0 12px 32px -14px rgba(15,27,45,.24);
+    --shadow-lg:0 28px 64px -22px rgba(15,27,45,.34);
+
+    /* ---------- Radius / Space ---------- */
+    --r-xs:6px;
+    --r-sm:9px;
+    --r-md:12px;
+    --r-lg:16px;
+    --r-xl:20px;
+    --r-full:999px;
+
+    --sidebar-w:268px;
+    --pad:26px;
+
+    --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+
+    color-scheme:light;
+}
+
+html[data-theme="dark"]{
+
+    --brand:#6d9bff;
+    --brand-strong:#9dbbff;
+    --brand-soft:#1b2540;
+    --brand-ring:rgba(109,155,255,.28);
+
+    --ok:#3ecf8e;
+    --ok-soft:#132c22;
+    --warn:#e2a33c;
+    --warn-soft:#2e2413;
+    --bad:#f2686f;
+    --bad-soft:#311a1d;
+    --info:#6d9bff;
+    --info-soft:#1b2540;
+    --mute:#9fb0c9;
+    --mute-soft:#1c2431;
+
+    --canvas:#0c1119;
+    --surface:#131a24;
+    --surface-2:#161e29;
+    --sidebar-bg:#101720;
+    --topbar-bg:rgba(19,26,36,.86);
+    --border:#222c3a;
+    --border-2:#2c3849;
+
+    --text:#e8eef8;
+    --text-2:#a3b1c7;
+    --text-3:#7c8aa1;
+
+    --shadow-xs:0 1px 2px rgba(0,0,0,.35);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.4), 0 2px 8px -2px rgba(0,0,0,.45);
+    --shadow-md:0 12px 32px -14px rgba(0,0,0,.65);
+    --shadow-lg:0 28px 64px -22px rgba(0,0,0,.75);
+
+    color-scheme:dark;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    -webkit-text-size-adjust:100%;
+}
+
+body{
+    font-family:var(--font);
+    font-size:14px;
+    line-height:1.5;
+    background:var(--canvas);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+}
+
+button,input,select,textarea{
+    font:inherit;
+    color:inherit;
+}
+
+a{
+    color:var(--brand);
+}
+
+::selection{
+    background:var(--brand);
+    color:#fff;
+}
+
+::-webkit-scrollbar{
+    width:10px;
+    height:10px;
+}
+
+::-webkit-scrollbar-track{
+    background:transparent;
+}
+
+::-webkit-scrollbar-thumb{
+    background:var(--border-2);
+    border-radius:var(--r-full);
+    border:3px solid transparent;
+    background-clip:content-box;
+}
+
+::-webkit-scrollbar-thumb:hover{
+    background:var(--text-3);
+    background-clip:content-box;
+}
+
+.app{
+    display:flex;
+    min-height:100vh;
+}
+
+
+
+
+/* ================= AI BRAIN ================= */
+
+.ai-tip{
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:var(--r-md);
+    padding:12px 14px;
+    margin-bottom:10px;
+}
+
+.ai-tip strong{font-size:13px}
+.ai-tip p{font-size:12px;color:var(--text-2);margin-top:2px}
+
+.ai-tip-icon{
+    flex:0 0 auto;
+    width:24px;height:24px;
+    border-radius:8px;
+    display:grid;place-items:center;
+    font-weight:800;font-size:12px;color:#fff;
+}
+.ai-ok .ai-tip-icon{background:var(--ok)}
+.ai-info .ai-tip-icon{background:var(--info)}
+.ai-warn .ai-tip-icon{background:var(--warn)}
+.ai-bad .ai-tip-icon{background:var(--bad)}
+
+.ai-badge{font-size:10px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:999px}
+.ai-b-ok{background:var(--ok-soft);color:var(--ok)}
+.ai-b-info{background:var(--info-soft);color:var(--info)}
+.ai-b-warn{background:var(--warn-soft);color:var(--warn)}
+.ai-b-bad{background:var(--bad-soft);color:var(--bad)}
+
+/* ================= SIDEBAR ================= */
+
+.sidebar{
+    width:var(--sidebar-w);
+    background:var(--sidebar-bg);
+    border-right:1px solid var(--border);
+    padding:20px 14px 24px;
+    position:fixed;
+    top:0;
+    bottom:0;
+    left:0;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    z-index:40;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:6px 8px 20px;
+}
+
+.logo-mark{
+    width:38px;
+    height:38px;
+    flex:0 0 auto;
+    border-radius:11px;
+    background:linear-gradient(140deg,var(--brand) 0%,var(--brand-strong) 100%);
+    color:#fff;
+    display:grid;
+    place-items:center;
+    font-weight:800;
+    font-size:15px;
+    letter-spacing:.02em;
+    box-shadow:0 6px 16px -6px var(--brand-ring), var(--shadow-xs);
+}
+
+.logo-text{
+    min-width:0;
+}
+
+.logo h1{
+    font-size:16px;
+    font-weight:750;
+    letter-spacing:-.01em;
+    line-height:1.2;
+}
+
+.logo span{
+    display:block;
+    font-size:11px;
+    color:var(--text-3);
+    letter-spacing:.02em;
+}
+
+.menu-title{
+    font-size:10px;
+    font-weight:700;
+    color:var(--text-3);
+    margin:20px 10px 8px;
+    text-transform:uppercase;
+    letter-spacing:.10em;
+}
+
+.nav{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+}
+
+.nav button{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:11px;
+    width:100%;
+    border:0;
+    background:transparent;
+    text-align:left;
+    padding:9px 11px;
+    border-radius:var(--r-sm);
+    color:var(--text-2);
+    font-size:13.5px;
+    font-weight:500;
+    cursor:pointer;
+    transition:background .16s ease, color .16s ease, box-shadow .16s ease;
+}
+
+.nav button svg{
+    width:17px;
+    height:17px;
+    flex:0 0 auto;
+    stroke:currentColor;
+    stroke-width:1.7;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    opacity:.85;
+}
+
+.nav button:hover{
+    background:var(--surface-2);
+    color:var(--text);
+}
+
+html[data-theme="dark"] .nav button:hover{
+    background:var(--mute-soft);
+}
+
+.nav button.active{
+    background:var(--brand-soft);
+    color:var(--brand-strong);
+    font-weight:650;
+}
+
+html[data-theme="dark"] .nav button.active{
+    color:var(--brand);
+}
+
+.nav button.active::before{
+    content:"";
+    position:absolute;
+    left:-14px;
+    top:50%;
+    transform:translateY(-50%);
+    width:3px;
+    height:22px;
+    border-radius:0 4px 4px 0;
+    background:var(--brand);
+}
+
+.nav button.active svg{
+    opacity:1;
+}
+
+.nav button:focus-visible{
+    outline:2px solid var(--brand);
+    outline-offset:2px;
+}
+
+.badge{
+    margin-left:auto;
+    background:var(--brand-soft);
+    color:var(--brand-strong);
+    border:1px solid transparent;
+    padding:1px 8px;
+    border-radius:var(--r-full);
+    font-size:11px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    line-height:1.7;
+}
+
+html[data-theme="dark"] .badge{
+    color:var(--brand);
+}
+
+.nav button.active .badge{
+    background:var(--brand);
+    color:#fff;
+}
+
+.sidebar-foot{
+    margin-top:auto;
+    padding-top:18px;
+}
+
+.user-chip{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px;
+    border:1px solid var(--border);
+    border-radius:var(--r-md);
+    background:var(--surface-2);
+}
+
+.user-avatar{
+    width:32px;
+    height:32px;
+    flex:0 0 auto;
+    border-radius:var(--r-full);
+    background:var(--brand-soft);
+    color:var(--brand-strong);
+    display:grid;
+    place-items:center;
+    font-size:11px;
+    font-weight:750;
+}
+
+.user-meta{
+    min-width:0;
+    line-height:1.35;
+}
+
+.user-meta strong{
+    display:block;
+    font-size:12.5px;
+    font-weight:650;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.user-meta span{
+    font-size:11px;
+    color:var(--text-3);
+}
+
+/* ================= MAIN ================= */
+
+.main{
+    margin-left:var(--sidebar-w);
+    width:calc(100% - var(--sidebar-w));
+    padding:var(--pad);
+    min-width:0;
+}
+
+.topbar{
+    position:sticky;
+    top:14px;
+    z-index:30;
+    background:var(--topbar-bg);
+    backdrop-filter:saturate(180%) blur(10px);
+    -webkit-backdrop-filter:saturate(180%) blur(10px);
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-sm);
+    padding:12px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    margin-bottom:24px;
+}
+
+.topbar-title{
+    min-width:0;
+}
+
+.topbar h2{
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:-.01em;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.topbar p{
+    font-size:12px;
+    color:var(--text-3);
+    margin-top:1px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.top-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:0 0 auto;
+}
+
+.clock{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    line-height:1.25;
+    padding-right:10px;
+    margin-right:2px;
+    border-right:1px solid var(--border);
+}
+
+.clock b{
+    font-size:13px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:.01em;
+}
+
+.clock span{
+    font-size:11px;
+    color:var(--text-3);
+}
+
+/* ================= BUTTONS ================= */
+
+.btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    height:38px;
+    padding:0 15px;
+    border:1px solid transparent;
+    border-radius:var(--r-sm);
+    background:var(--surface-2);
+    color:var(--text);
+    font-size:13px;
+    font-weight:620;
+    letter-spacing:.005em;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background .16s ease, color .16s ease, box-shadow .16s ease, transform .16s ease, border-color .16s ease;
+}
+
+.btn svg{
+    width:15px;
+    height:15px;
+    stroke:currentColor;
+    stroke-width:1.9;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
+.btn:active{
+    transform:translateY(1px);
+}
+
+.btn:focus-visible{
+    outline:2px solid var(--brand);
+    outline-offset:2px;
+}
+
+.btn:disabled{
+    opacity:.5;
+    cursor:not-allowed;
+    transform:none;
+}
+
+.btn-primary{
+    background:var(--brand);
+    color:#fff;
+    box-shadow:0 6px 16px -8px var(--brand-ring);
+}
+
+.btn-primary:hover:not(:disabled){
+    background:var(--brand-strong);
+}
+
+html[data-theme="dark"] .btn-primary:hover:not(:disabled){
+    background:var(--brand-strong);
+    color:#0c1119;
+}
+
+.btn-secondary{
+    background:var(--surface);
+    color:var(--text-2);
+    border-color:var(--border-2);
+}
+
+.btn-secondary:hover:not(:disabled){
+    background:var(--surface-2);
+    color:var(--text);
+    border-color:var(--text-3);
+}
+
+.btn-success{
+    background:var(--ok);
+    color:#fff;
+}
+
+.btn-success:hover:not(:disabled){
+    filter:brightness(.94);
+}
+
+.btn-warning{
+    background:var(--warn);
+    color:#fff;
+}
+
+.btn-warning:hover:not(:disabled){
+    filter:brightness(.94);
+}
+
+.btn-danger{
+    background:var(--bad);
+    color:#fff;
+}
+
+.btn-danger:hover:not(:disabled){
+    filter:brightness(.94);
+}
+
+.icon-btn{
+    width:38px;
+    height:38px;
+    padding:0;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--border-2);
+    border-radius:var(--r-sm);
+    background:var(--surface);
+    color:var(--text-2);
+    cursor:pointer;
+    transition:background .16s ease, color .16s ease, border-color .16s ease;
+}
+
+.icon-btn:hover{
+    background:var(--surface-2);
+    color:var(--text);
+    border-color:var(--text-3);
+}
+
+.icon-btn:focus-visible{
+    outline:2px solid var(--brand);
+    outline-offset:2px;
+}
+
+.icon-btn svg{
+    width:17px;
+    height:17px;
+    stroke:currentColor;
+    stroke-width:1.8;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
+.icon-moon{
+    display:none;
+}
+
+html[data-theme="dark"] .icon-sun{
+    display:none;
+}
+
+html[data-theme="dark"] .icon-moon{
+    display:block;
+}
+
+td .btn{
+    height:32px;
+    padding:0 12px;
+    font-size:12px;
+    border-radius:var(--r-xs);
+}
+
+td .btn svg{
+    width:14px;
+    height:14px;
+}
+
+/* ================= PAGES ================= */
+
+.page{
+    display:none;
+}
+
+.page.active{
+    display:block;
+    animation:fadeUp .22s ease both;
+}
+
+@keyframes fadeUp{
+    from{ opacity:0; transform:translateY(6px); }
+    to{ opacity:1; transform:none; }
+}
+
+@media (prefers-reduced-motion:reduce){
+    .page.active{ animation:none; }
+}
+
+ .page-title{
+     margin-bottom:20px;
+ }
+
+ .page-title h1{
+    font-size:22px;
+    font-weight:750;
+    letter-spacing:-.02em;
+}
+
+.page-title p{
+    color:var(--text-2);
+    font-size:13px;
+    margin-top:5px;
+    max-width:70ch;
+}
+
+ .meta-chips{
+     display:flex;
+     flex-wrap:wrap;
+     gap:8px;
+     margin-top:14px;
+ }
+
+.chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:5px 11px;
+    border-radius:var(--r-full);
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--text-2);
+    font-size:11.5px;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+}
+
+.chip svg{
+    width:13px;
+    height:13px;
+    stroke:currentColor;
+    stroke-width:1.9;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    opacity:.8;
+}
+
+ .chip b{
+     color:var(--text);
+     font-weight:750;
+ }
+
+ /* --- indikator koneksi backend --- */
+
+ .chip-status{
+     gap:8px;
+ }
+
+ .chip-status .pulse{
+     width:8px;
+     height:8px;
+     border-radius:50%;
+     flex:0 0 auto;
+     background:var(--mute);
+     box-shadow:0 0 0 3px var(--mute-soft);
+ }
+
+ .chip-status[data-state="online"] .pulse{
+     background:var(--ok);
+     box-shadow:0 0 0 3px var(--ok-soft);
+ }
+
+ .chip-status[data-state="connecting"] .pulse{
+     background:var(--brand);
+     box-shadow:0 0 0 3px var(--brand-soft);
+     animation:blink 1.1s ease-in-out infinite;
+ }
+
+ .chip-status[data-state="warn"] .pulse{
+     background:var(--warn);
+     box-shadow:0 0 0 3px var(--warn-soft);
+ }
+
+ .chip-status[data-state="error"] .pulse{
+     background:var(--bad);
+     box-shadow:0 0 0 3px var(--bad-soft);
+ }
+
+ @keyframes blink{
+     0%,100%{ opacity:1; }
+     50%{ opacity:.35; }
+ }
+
+ @media (prefers-reduced-motion:reduce){
+     .chip-status[data-state="connecting"] .pulse{ animation:none; }
+ }
+
+ /* --- project workspace --- */
+
+ .btn-back{
+     height:34px;
+     padding:0 13px 0 10px;
+     margin-bottom:16px;
+ }
+
+ .btn-back svg{
+     width:15px;
+     height:15px;
+ }
+
+ .ws-list{
+     display:flex;
+     flex-direction:column;
+     gap:10px;
+ }
+
+ .ws-row{
+     display:flex;
+     align-items:center;
+     gap:12px;
+     padding:11px 13px;
+     border:1px solid var(--border);
+     border-radius:var(--r-sm);
+     background:var(--surface-2);
+ }
+
+ .ws-dot{
+     width:9px;
+     height:9px;
+     border-radius:50%;
+     flex:0 0 auto;
+     background:var(--mute);
+     box-shadow:0 0 0 3px var(--mute-soft);
+ }
+
+ .ws-row.on .ws-dot{
+     background:var(--ok);
+     box-shadow:0 0 0 3px var(--ok-soft);
+ }
+
+ .ws-body{
+     flex:1;
+     min-width:0;
+ }
+
+ .ws-body strong{
+     display:block;
+     font-size:13px;
+     font-weight:600;
+     color:var(--text);
+     overflow:hidden;
+     text-overflow:ellipsis;
+     white-space:nowrap;
+ }
+
+ .ws-body span{
+     font-size:11.5px;
+     font-family:var(--mono);
+     color:var(--text-3);
+ }
+
+ .integration-list{
+     display:grid;
+     grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+     gap:10px;
+ }
+
+ .integration{
+     display:flex;
+     align-items:center;
+     gap:11px;
+     padding:12px 13px;
+     border:1px dashed var(--border-2);
+     border-radius:var(--r-sm);
+     background:var(--surface-2);
+ }
+
+ .integration .stat-icon{
+     width:30px;
+     height:30px;
+ }
+
+ .integration strong{
+     display:block;
+     font-size:13px;
+     font-weight:600;
+     color:var(--text-2);
+ }
+
+ .integration span{
+     font-size:11.5px;
+     color:var(--text-3);
+ }
+
+/* ================= KPI / STATS ================= */
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+    margin-bottom:20px;
+}
+
+.stat{
+    position:relative;
+    overflow:hidden;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-xs);
+    padding:18px;
+    transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+}
+
+.stat::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:0;
+    bottom:0;
+    width:3px;
+    background:var(--accent,var(--brand));
+    opacity:.9;
+}
+
+.stat:hover{
+    box-shadow:var(--shadow-md);
+    transform:translateY(-1px);
+    border-color:var(--border-2);
+}
+
+.stat-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:14px;
+}
+
+.stat-icon{
+    width:34px;
+    height:34px;
+    border-radius:10px;
+    display:grid;
+    place-items:center;
+    background:var(--accent-soft,var(--brand-soft));
+    color:var(--accent,var(--brand));
+}
+
+.stat-icon svg{
+    width:17px;
+    height:17px;
+    stroke:currentColor;
+    stroke-width:1.8;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
+.stat-tag{
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+    color:var(--text-3);
+}
+
+.stat-label{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--text-3);
+}
+
+.stat-value{
+    font-size:30px;
+    font-weight:750;
+    line-height:1.15;
+    letter-spacing:-.03em;
+    margin-top:6px;
+    font-variant-numeric:tabular-nums;
+}
+
+.stat-info{
+    font-size:12px;
+    color:var(--text-2);
+    margin-top:5px;
+}
+
+.stat--brand{ --accent:var(--brand); --accent-soft:var(--brand-soft); }
+.stat--ok{    --accent:var(--ok);    --accent-soft:var(--ok-soft); }
+.stat--warn{  --accent:var(--warn);  --accent-soft:var(--warn-soft); }
+.stat--bad{   --accent:var(--bad);   --accent-soft:var(--bad-soft); }
+.stat--mute{  --accent:var(--mute);  --accent-soft:var(--mute-soft); }
+
+/* ================= CARDS ================= */
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+}
+
+.split{
+    display:grid;
+    grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);
+    gap:16px;
+    margin-bottom:16px;
+    align-items:start;
+}
+
+.stack{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+}
+
+ .card{
+     display:flex;
+     flex-direction:column;
+     background:var(--surface);
+     border:1px solid var(--border);
+     border-radius:var(--r-lg);
+     box-shadow:var(--shadow-xs);
+     padding:18px;
+     overflow:hidden;
+     transition:box-shadow .18s ease, border-color .18s ease;
+ }
+
+.card:hover{
+    box-shadow:var(--shadow-sm);
+}
+
+.card-head{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    margin-bottom:14px;
+}
+
+.card-head .stat-icon{
+    width:32px;
+    height:32px;
+    border-radius:9px;
+}
+
+.card-head h3{
+    font-size:14.5px;
+    font-weight:700;
+    letter-spacing:-.01em;
+    flex:1;
+    min-width:0;
+}
+
+.card-hint{
+    font-size:11.5px;
+    color:var(--text-3);
+    font-weight:500;
+    white-space:nowrap;
+}
+
+.card h3{
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:-.01em;
+    margin-bottom:8px;
+}
+
+.card p{
+    color:var(--text-2);
+    font-size:13px;
+    line-height:1.6;
+}
+
+.card p + p{
+    margin-top:3px;
+}
+
+ .card-actions{
+     margin-top:auto;
+     padding-top:16px;
+     display:flex;
+     gap:8px;
+     flex-wrap:wrap;
+ }
+
+ .card-actions:only-child{
+     padding-top:0;
+ }
+
+ .divider{
+     flex:0 0 auto;
+     height:1px;
+     background:var(--border);
+     margin:15px 0;
+     border:0;
+ }
+
+/* ================= DASHBOARD PARTS ================= */
+
+.donut-wrap{
+    display:flex;
+    align-items:center;
+    gap:22px;
+    flex-wrap:wrap;
+}
+
+.donut{
+    position:relative;
+    width:136px;
+    height:136px;
+    flex:0 0 auto;
+    border-radius:50%;
+    background:conic-gradient(var(--mute-soft) 0deg 360deg);
+}
+
+.donut::after{
+    content:"";
+    position:absolute;
+    inset:19px;
+    border-radius:50%;
+    background:var(--surface);
+    box-shadow:inset 0 0 0 1px var(--border);
+}
+
+.donut-center{
+    position:absolute;
+    inset:0;
+    display:grid;
+    align-content:center;
+    justify-items:center;
+    text-align:center;
+    z-index:1;
+}
+
+.donut-center b{
+    font-size:24px;
+    font-weight:750;
+    letter-spacing:-.03em;
+    line-height:1.1;
+    font-variant-numeric:tabular-nums;
+}
+
+.donut-center span{
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--text-3);
+    margin-top:2px;
+}
+
+.legend{
+    flex:1;
+    min-width:190px;
+    display:flex;
+    flex-direction:column;
+    gap:11px;
+}
+
+.legend-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:13px;
+}
+
+.legend-dot{
+    width:9px;
+    height:9px;
+    border-radius:3px;
+    flex:0 0 auto;
+}
+
+.legend-name{
+    color:var(--text-2);
+}
+
+.legend-val{
+    margin-left:auto;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+}
+
+.legend-val small{
+    color:var(--text-3);
+    font-weight:600;
+    margin-left:5px;
+}
+
+.bar-list{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+}
+
+.bar-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:4px 12px;
+    font-size:12.5px;
+}
+
+.bar-row-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    grid-column:1/-1;
+}
+
+.bar-row-head span{
+    color:var(--text-2);
+    font-weight:600;
+}
+
+.bar-row-head b{
+    font-variant-numeric:tabular-nums;
+}
+
+.bar{
+    grid-column:1/-1;
+    height:7px;
+    border-radius:var(--r-full);
+    background:var(--mute-soft);
+    overflow:hidden;
+}
+
+.bar i{
+    display:block;
+    height:100%;
+    border-radius:inherit;
+    background:var(--accent,var(--brand));
+    transition:width .35s ease;
+}
+
+.bar--ok{ --accent:var(--ok); }
+.bar--warn{ --accent:var(--warn); }
+.bar--mute{ --accent:var(--mute); }
+.bar--bad{ --accent:var(--bad); }
+.bar--brand{ --accent:var(--brand); }
+
+.feed{
+    display:flex;
+    flex-direction:column;
+}
+
+.feed-item{
+    display:flex;
+    gap:12px;
+    padding:12px 0;
+    border-bottom:1px dashed var(--border);
+}
+
+.feed-item:first-child{
+    padding-top:0;
+}
+
+.feed-item:last-child{
+    border-bottom:0;
+    padding-bottom:0;
+}
+
+.feed-icon{
+    width:29px;
+    height:29px;
+    flex:0 0 auto;
+    border-radius:9px;
+    display:grid;
+    place-items:center;
+    background:var(--mute-soft);
+    color:var(--mute);
+}
+
+.feed-icon svg{
+    width:14px;
+    height:14px;
+    stroke:currentColor;
+    stroke-width:1.9;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
+.feed-icon.tone-ok{ background:var(--ok-soft); color:var(--ok); }
+.feed-icon.tone-brand{ background:var(--brand-soft); color:var(--brand); }
+.feed-icon.tone-warn{ background:var(--warn-soft); color:var(--warn); }
+.feed-icon.tone-bad{ background:var(--bad-soft); color:var(--bad); }
+
+.feed-body{
+    min-width:0;
+    flex:1;
+}
+
+.feed-body strong{
+    display:block;
+    font-size:13px;
+    font-weight:650;
+    letter-spacing:-.005em;
+}
+
+.feed-body p{
+    font-size:11.5px;
+    color:var(--text-3);
+    margin-top:1px;
+}
+
+.feed-time{
+    font-size:11px;
+    color:var(--text-3);
+    font-variant-numeric:tabular-nums;
+    flex:0 0 auto;
+}
+
+.summary-row{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    padding:14px;
+    border:1px solid var(--border);
+    border-radius:var(--r-md);
+    background:var(--surface-2);
+    transition:border-color .16s ease, background .16s ease;
+}
+
+.summary-row:hover{
+    border-color:var(--border-2);
+}
+
+.summary-body{
+    flex:1;
+    min-width:0;
+}
+
+.summary-body h3{
+    margin-bottom:4px;
+}
+
+.summary-actions{
+    margin-top:12px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+.quick-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+/* ================= TABLE ================= */
+
+.table-box{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-xs);
+    overflow:auto;
+}
+
+ .table-head{
+     background:var(--surface);
+     padding:14px 18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:14px;
+    border-bottom:1px solid var(--border);
+}
+
+.table-head strong{
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:-.01em;
+}
+
+.search{
+    height:36px;
+    width:240px;
+    max-width:100%;
+    padding:0 12px 0 34px;
+    border:1px solid var(--border-2);
+    border-radius:var(--r-sm);
+    background:var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b97ad' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 10px center/15px 15px;
+    font-size:13px;
+    outline:none;
+    transition:border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+
+.search:focus{
+    border-color:var(--brand);
+    background-color:var(--surface);
+    box-shadow:0 0 0 3px var(--brand-ring);
+}
+
+ table{
+     width:100%;
+     border-collapse:separate;
+     border-spacing:0;
+ }
+
+ /* Tabel hanya boleh lebih lebar dari wadahnya di layar sempit,
+    supaya kolom tetap terbaca dan bisa digeser ke samping.
+    Di layar lebar tabel mengikuti lebar kartu, tidak terpotong. */
+ @media (max-width:1100px){
+     table{
+         min-width:760px;
+     }
+ }
+
+th,td{
+    padding:12px 18px;
+    border-bottom:1px solid var(--border);
+    text-align:left;
+    font-size:13px;
+    vertical-align:middle;
+}
+
+thead th{
+    position:sticky;
+    top:0;
+    z-index:1;
+    background:var(--surface-2);
+    color:var(--text-3);
+    font-size:10.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    white-space:nowrap;
+    border-bottom:1px solid var(--border);
+}
+
+tbody tr{
+    transition:background .14s ease;
+}
+
+tbody tr:hover{
+    background:var(--surface-2);
+}
+
+tbody tr:last-child td{
+    border-bottom:0;
+}
+
+td:first-child{
+    font-weight:600;
+}
+
+
+
+/* ================= STATUS PILL ================= */
+
+.status{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 10px;
+    border-radius:var(--r-full);
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    white-space:nowrap;
+    line-height:1.6;
+}
+
+.status::before{
+    content:"";
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:currentColor;
+    flex:0 0 auto;
+}
+
+.status-blue{
+    background:var(--info-soft);
+    color:var(--info);
+}
+
+.status-green{
+    background:var(--ok-soft);
+    color:var(--ok);
+}
+
+.status-orange{
+    background:var(--warn-soft);
+    color:var(--warn);
+}
+
+.status-red{
+    background:var(--bad-soft);
+    color:var(--bad);
+}
+
+.status-gray{
+    background:var(--mute-soft);
+    color:var(--mute);
+}
+
+/* ================= FORM ================= */
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:14px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.form-group.full{
+    grid-column:1/-1;
+}
+
+.form-group label{
+    font-size:12px;
+    font-weight:650;
+    color:var(--text-2);
+    letter-spacing:.005em;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea{
+    padding:10px 12px;
+    border:1px solid var(--border-2);
+    border-radius:var(--r-sm);
+    background:var(--surface);
+    font-size:13.5px;
+    outline:none;
+    transition:border-color .16s ease, box-shadow .16s ease;
+}
+
+.form-group select{
+    appearance:none;
+    -webkit-appearance:none;
+    padding-right:34px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b97ad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 12px center;
+    background-size:15px 15px;
+    cursor:pointer;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder{
+    color:var(--text-3);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus{
+    border-color:var(--brand);
+    box-shadow:0 0 0 3px var(--brand-ring);
+}
+
+.form-group textarea{
+    min-height:110px;
+    resize:vertical;
+    line-height:1.55;
+}
+
+.form-actions{
+    margin-top:18px;
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+}
+
+/* ================= TIMELINE ================= */
+
+.timeline{
+    margin-top:16px;
+    position:relative;
+}
+
+.timeline-item{
+    position:relative;
+    display:flex;
+    gap:14px;
+    padding:0 0 18px 0;
+}
+
+.timeline-item:last-child{
+    padding-bottom:0;
+}
+
+.timeline-item::before{
+    content:"";
+    position:absolute;
+    left:5px;
+    top:16px;
+    bottom:0;
+    width:1px;
+    background:var(--border-2);
+}
+
+.timeline-item:last-child::before{
+    display:none;
+}
+
+.dot{
+    width:11px;
+    height:11px;
+    flex:0 0 auto;
+    margin-top:4px;
+    background:var(--surface);
+    border:2px solid var(--brand);
+    border-radius:50%;
+    box-shadow:0 0 0 3px var(--brand-soft);
+    z-index:1;
+}
+
+.timeline-item h4{
+    font-size:13px;
+    font-weight:650;
+}
+
+.timeline-item p{
+    font-size:11.5px;
+    color:var(--text-3);
+    margin-top:2px;
+}
+
+/* ================= FEATURE MATRIX ================= */
+
+.matrix{
+    overflow:auto;
+    margin:0 -18px -18px;
+}
+
+.matrix table{
+    min-width:800px;
+}
+
+.matrix td:first-child{
+    font-weight:650;
+}
+
+.matrix th,
+.matrix td{
+    text-align:center;
+}
+
+.matrix th:first-child,
+.matrix td:first-child{
+    text-align:left;
+    position:sticky;
+    left:0;
+    background:var(--surface);
+    z-index:1;
+}
+
+.matrix thead th:first-child{
+    background:var(--surface-2);
+    z-index:3;
+}
+
+.toggle{
+    width:42px;
+    height:23px;
+    border-radius:var(--r-full);
+    background:var(--border-2);
+    display:inline-block;
+    position:relative;
+    cursor:pointer;
+    transition:background .18s ease, box-shadow .18s ease;
+    vertical-align:middle;
+}
+
+.toggle::after{
+    content:"";
+    position:absolute;
+    width:17px;
+    height:17px;
+    background:#fff;
+    border-radius:50%;
+    left:3px;
+    top:3px;
+    box-shadow:0 1px 3px rgba(15,27,45,.28);
+    transition:left .18s cubic-bezier(.4,0,.2,1);
+}
+
+.toggle.on{
+    background:var(--ok);
+}
+
+.toggle.on::after{
+    left:22px;
+}
+
+.toggle:hover{
+    box-shadow:0 0 0 4px var(--mute-soft);
+}
+
+.toggle.on:hover{
+    box-shadow:0 0 0 4px var(--ok-soft);
+}
+
+.toggle:focus-visible{
+    outline:2px solid var(--brand);
+    outline-offset:3px;
+}
+
+/* ================= MODAL ================= */
+
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(12,22,40,.42);
+    backdrop-filter:blur(3px);
+    -webkit-backdrop-filter:blur(3px);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:100;
+}
+
+.modal.show{
+    display:flex;
+}
+
+.modal-box{
+    width:min(680px,100%);
+    max-height:90vh;
+    overflow:auto;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--r-xl);
+    box-shadow:var(--shadow-lg);
+    padding:22px;
+    animation:modalIn .2s cubic-bezier(.2,.8,.3,1) both;
+}
+
+@keyframes modalIn{
+    from{ opacity:0; transform:translateY(10px) scale(.985); }
+    to{ opacity:1; transform:none; }
+}
+
+@media (prefers-reduced-motion:reduce){
+    .modal-box{ animation:none; }
+}
+
+.modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    margin:-4px 0 18px;
+    padding-bottom:15px;
+    border-bottom:1px solid var(--border);
+}
+
+.modal-header h2{
+    font-size:17px;
+    font-weight:750;
+    letter-spacing:-.02em;
+}
+
+.close{
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text-2);
+    width:34px;
+    height:34px;
+    border-radius:var(--r-full);
+    font-size:19px;
+    line-height:1;
+    cursor:pointer;
+    flex:0 0 auto;
+    transition:background .16s ease, color .16s ease, border-color .16s ease;
+}
+
+.close:hover{
+    background:var(--bad-soft);
+    color:var(--bad);
+    border-color:var(--bad-soft);
+}
+
+.close:focus-visible{
+    outline:2px solid var(--brand);
+    outline-offset:2px;
+}
+
+.modal .card{
+    box-shadow:none;
+    background:var(--surface-2);
+}
+
+/* ================= TOAST ================= */
+
+.toast-wrap{
+    position:fixed;
+    top:16px;
+    right:16px;
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+    z-index:200;
+    max-width:min(360px,calc(100vw - 32px));
+}
+
+.toast{
+    position:relative;
+    background:var(--surface);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-left:3px solid var(--ok);
+    padding:12px 15px;
+    border-radius:var(--r-md);
+    font-size:13px;
+    font-weight:550;
+    box-shadow:var(--shadow-md);
+    opacity:0;
+    transform:translateY(-8px);
+    transition:opacity .2s ease, transform .2s ease;
+}
+
+.toast.show{
+    opacity:1;
+    transform:none;
+}
+
+.toast-error{
+    border-left-color:var(--bad);
+}
+
+.empty{
+    color:var(--text-3);
+    font-size:13px;
+    padding:26px 18px !important;
+    text-align:center;
+    font-weight:500;
+}
+
+.muted{
+    color:var(--text-3);
+}
+
+.mono{
+    font-family:var(--mono);
+    font-size:12px;
+}
+
+.nowrap{
+    white-space:nowrap;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media(max-width:1200px){
+
+    .split{
+        grid-template-columns:minmax(0,1fr);
+    }
+}
+
+@media(max-width:1000px){
+
+    :root{
+        --sidebar-w:236px;
+        --pad:20px;
+    }
+
+    .stats{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .clock{
+        display:none;
+    }
+}
+
+@media(max-width:760px){
+
+    .app{
+        display:block;
+    }
+
+    .sidebar{
+        position:relative;
+        width:100%;
+        height:auto;
+        border-right:0;
+        border-bottom:1px solid var(--border);
+        padding:16px 14px;
+    }
+
+    .sidebar-foot{
+        display:none;
+    }
+
+    .nav{
+        flex-direction:row;
+        flex-wrap:wrap;
+    }
+
+    .nav button{
+        width:auto;
+        padding:8px 12px;
+    }
+
+    .nav button.active::before{
+        display:none;
+    }
+
+    .main{
+        margin-left:0;
+        width:100%;
+        padding:14px;
+    }
+
+    .topbar{
+        position:static;
+        flex-direction:column;
+        align-items:stretch;
+        gap:12px;
+    }
+
+    .top-actions{
+        flex-wrap:wrap;
+    }
+
+    .top-actions .btn{
+        flex:1;
+    }
+
+    .stats,
+    .grid,
+    .form-grid{
+        grid-template-columns:1fr;
+    }
+
+    .table-head{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .search{
+        width:100%;
+    }
+/* ============================================================
+   CONTROL CENTER DASHBOARD — Mission Control Layout
+   ============================================================ */
+
+/* ---------- KPI Cards Row ---------- */
+.cc-kpi-row{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+    margin-bottom:18px;
+}
+.cc-kpi{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);
+    padding:16px 18px;
+    position:relative;
+    overflow:hidden;
+    transition:box-shadow .16s ease, transform .16s ease, border-color .16s ease;
+}
+.cc-kpi:hover{
+    box-shadow:var(--shadow-sm);
+    border-color:var(--border-2);
+    transform:translateY(-1px);
+}
+.cc-kpi-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+}
+.cc-kpi-icon{
+    width:34px;
+    height:34px;
+    border-radius:var(--r-md);
+    display:grid;
+    place-items:center;
+    font-weight:800;
+    font-size:12px;
+    color:#fff;
+    flex:0 0 auto;
+}
+.cc-kpi-icon.ok{background:var(--ok-soft);color:var(--ok);}
+.cc-kpi-icon.warn{background:var(--warn-soft);color:var(--warn);}
+/* ---------- Module Cards ---------- */
+.cc-module{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);
+    overflow:hidden;
+    transition:box-shadow .16s ease;
+}
+.cc-module:hover{
+    box-shadow:var(--shadow-sm);
+}
+.cc-module-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 18px;
+    border-bottom:1px solid var(--border);
+    background:var(--surface-2);
+}
+.cc-module-head h3{
+    font-size:13.5px;
+    font-weight:700;
+    letter-spacing:-.01em;
+    margin:0;
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+.cc-module-head .cc-head-icon{
+    width:28px;
+    height:28px;
+    border-radius:var(--r-sm);
+    display:grid;
+    place-items:center;
+    background:var(--brand-soft);
+    color:var(--brand-strong);
+    flex:0 0 auto;
+}
+.cc-module-head .cc-head-count{
+    margin-left:auto;
+    font-size:12px;
+    font-weight:700;
+    padding:2px 10px;
+    border-radius:var(--r-full);
+    background:var(--brand-soft);
+    color:var(--brand-strong);
+    font-variant-numeric:tabular-nums;
+}
+.cc-module-head .cc-head-action{
+    font-size:11.5px;
+    color:var(--brand-strong);
+    font-weight:600;
+    background:none;
+    border:0;
+    padding:4px 8px;
+    border-radius:var(--r-sm);
+    cursor:pointer;
+}
+.cc-module-head .cc-head-action:hover{
+    background:var(--brand-soft);
+}
+.cc-module-body{
+    padding:14px 18px 16px;
+}
+
+.cc-kpi-icon.bad{background:var(--bad-soft);color:var(--bad);}
+.cc-kpi-icon.brand{background:var(--brand-soft);color:var(--brand-strong);}
+.cc-kpi-icon.mute{background:var(--mute-soft);color:var(--mute);}
+.cc-kpi-label{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--text-3);
+}
+.cc-kpi-value{
+    font-size:26px;
+    font-weight:800;
+    letter-spacing:-.02em;
+    color:var(--text);
+    line-height:1.1;
+    margin-bottom:3px;
+    font-variant-numeric:tabular-nums;
+}
+.cc-kpi-sub{
+    font-size:11.5px;
+    color:var(--text-2);
+    display:flex;
+    align-items:center;
+    gap:5px;
+}
+.cc-kpi-delta{
+    font-size:11px;
+    padding:1px 7px;
+    border-radius:var(--r-full);
+    font-weight:600;
+}
+.cc-kpi-delta.up{background:var(--ok-soft);color:var(--ok);}
+.cc-kpi-delta.down{background:var(--bad-soft);color:var(--bad);}
+.cc-kpi-delta.flat{background:var(--mute-soft);color:var(--mute);}
+.cc-kpi-trend{
+    position:absolute;
+    bottom:0;
+    left:0;
+    right:0;
+    height:3px;
+    background:var(--border);
+    border-radius:0 0 var(--r-lg) var(--r-lg);
+    overflow:hidden;
+}
+.cc-kpi-trend-fill{
+    height:100%;
+    background:linear-gradient(90deg,var(--brand),var(--brand-strong));
+    border-radius:0 0 var(--r-lg) var(--r-lg);
+    transition:width .6s ease;
+}
+/* ---------- Pipeline / CI-CD ---------- */
+.pipeline-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+.pipeline-item{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:10px;
+    padding:10px 0;
+    border-bottom:1px solid var(--border);
+}
+.pipeline-item:last-child{border-bottom:0;}
+.pipeline-item-info{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    min-width:0;
+}
+.pipeline-item-title{
+    font-size:13px;
+    font-weight:600;
+    color:var(--text);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.pipeline-item-meta{
+    font-size:11.5px;
+    color:var(--text-2);
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+.pipeline-item-status{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-size:11px;
+    font-weight:600;
+    padding:1px 8px;
+    border-radius:var(--r-full);
+}
+.pipeline-item-status .dot{
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    display:inline-block;
+}
+.pipeline-item-status.running .dot{animation:pulse-dot 1.2s ease-in-out infinite;background:var(--brand);}
+.pipeline-item-status.success{background:var(--ok-soft);color:var(--ok);}
+.pipeline-item-status.success .dot{background:var(--ok);}
+.pipeline-item-status.pending{background:var(--warn-soft);color:var(--warn);}
+.pipeline-item-status.pending .dot{background:var(--warn);}
+.pipeline-item-status.failed{background:var(--bad-soft);color:var(--bad);}
+.pipeline-item-status.failed .dot{background:var(--bad);}
+.pipeline-item-status.accepted{background:var(--info-soft);color:var(--info);}
+.pipeline-item-status.accepted .dot{background:var(--info);}
+.pipeline-item-status.review{background:var(--mute-soft);color:var(--mute);}
+.pipeline-item-status.review .dot{background:var(--mute);}
+.pipeline-item-actions{display:flex;gap:6px;align-items:center;}
+.build-queue{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+    max-height:220px;
+    overflow-y:auto;
+}
+.build-queue::-webkit-scrollbar{width:5px;}
+.build-queue::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px;}
+.build-item{
+    display:grid;
+    grid-template-columns:32px 1fr auto;
+    gap:10px;
+    align-items:center;
+    padding:7px 10px;
+    background:var(--surface-2);
+    border-radius:var(--r-sm);
+    border:1px solid var(--border);
+    font-size:12px;
+}
+.build-item .build-num{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-3);
+    font-weight:600;
+}
+.build-item .build-info{
+    display:flex;
+    flex-direction:column;
+    gap:1px;
+    min-width:0;
+}
+.build-item .build-name{
+    font-weight:600;
+    color:var(--text);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.build-item .build-meta{font-size:11px;color:var(--text-2);}
+.build-item .build-bar{
+    height:4px;
+    border-radius:2px;
+    background:var(--border);
+    overflow:hidden;
+    width:80px;
+}
+.build-item .build-bar-fill{
+    height:100%;
+    background:linear-gradient(90deg,var(--brand),var(--brand-strong));
+    border-radius:2px;
+}
+.build-item .build-status{
+    font-size:10px;
+    font-weight:700;
+    padding:2px 7px;
+    border-radius:var(--r-full);
+    text-transform:uppercase;
+    letter-spacing:.04em;
+}
+.build-item .build-status.succeeded{background:var(--ok-soft);color:var(--ok);}
+.build-item .build-status.running{background:var(--brand-soft);color:var(--brand-strong);}
+.build-item .build-status.pending{background:var(--mute-soft);color:var(--mute);}
+.build-item .build-status.failed{background:var(--bad-soft);color:var(--bad);}
+
+.pr-list{display:flex;flex-direction:column;gap:8px;}
+.pr-item{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:10px;
+    align-items:center;
+    padding:8px 10px;
+    background:var(--surface-2);
+    border-radius:var(--r-sm);
+    border:1px solid var(--border);
+}
+.pr-item .pr-info{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.pr-item .pr-title{
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--text);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.pr-item .pr-meta{font-size:11px;color:var(--text-2);}
+.pr-item .pr-status{
+    font-size:10px;
+    font-weight:700;
+    padding:2px 8px;
+    border-radius:var(--r-full);
+    text-transform:uppercase;
+    letter-spacing:.04em;
+}
+.pr-item .pr-status.approved{background:var(--ok-soft);color:var(--ok);}
+.pr-item .pr-status.review{background:var(--warn-soft);color:var(--warn);}
+.pr-item .pr-status.changes{background:var(--bad-soft);color:var(--bad);}
+.pr-item .pr-status.merge{background:var(--info-soft);color:var(--info);}
+.fr-queue{display:flex;flex-direction:column;gap:8px;}
+.fr-item{
+    display:grid;
+    grid-template-columns:32px 1fr auto;
+    gap:10px;
+    align-items:center;
+    padding:8px 10px;
+    background:var(--surface-2);
+    border-radius:var(--r-sm);
+    border:1px solid var(--border);
+}
+.fr-item .fr-id{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-3);
+    font-weight:600;
+}
+.fr-item .fr-info{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.fr-item .fr-title{
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--text);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.fr-item .fr-meta{font-size:11px;color:var(--text-2);}
+.fr-item .fr-priority{
+    font-size:10px;
+    font-weight:700;
+    padding:2px 8px;
+    border-radius:var(--r-full);
+    text-transform:uppercase;
+    letter-spacing:.04em;
+}
+.fr-item .fr-priority.critical{background:var(--bad-soft);color:var(--bad);}
+.fr-item .fr-priority.high{background:var(--warn-soft);color:var(--warn);}
+.fr-item .fr-priority.medium{background:var(--info-soft);color:var(--info);}
+.fr-item .fr-priority.low{background:var(--mute-soft);color:var(--mute);}
+.fr-item .fr-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-full);}
+.fr-item .fr-status.pending{background:var(--warn-soft);color:var(--warn);}
+.fr-item .fr-status.approved{background:var(--info-soft);color:var(--info);}
+.fr-item .fr-status.rejected{background:var(--bad-soft);color:var(--bad);}
+/* ---------- Health Matrix ---------- */
+.health-matrix{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:14px;
+}
+.health-cell{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:var(--r-md);
+    padding:12px 14px;
+    transition:border-color .16s ease, box-shadow .16s ease;
+}
+.health-cell:hover{
+    border-color:var(--border-2);
+    box-shadow:var(--shadow-xs);
+}
+.health-cell-up{border-left:3px solid var(--ok);}
+.health-cell-warn{border-left:3px solid var(--warn);}
+.health-cell-down{border-left:3px solid var(--bad);}
+.health-cell-name{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+}
+.health-cell-name .hc-icon{
+    width:26px;
+    height:26px;
+    border-radius:var(--r-sm);
+    display:grid;
+    place-items:center;
+    font-size:12px;
+    font-weight:700;
+    flex:0 0 auto;
+}
+.health-cell-name .hc-icon.ok{background:var(--ok-soft);color:var(--ok);}
+.health-cell-name .hc-icon.warn{background:var(--warn-soft);color:var(--warn);}
+.health-cell-name .hc-icon.bad{background:var(--bad-soft);color:var(--bad);}
+.health-cell-name h4{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--text);
+    margin:0;
+    white-space:nowrap;
+/* ---------- Alert Stream ---------- */
+.alert-stream{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+    max-height:200px;
+    overflow-y:auto;
+}
+.alert-stream::-webkit-scrollbar{width:5px;}
+.alert-stream::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px;}
+.alert-item{
+    display:flex;
+    gap:10px;
+    padding:8px 10px;
+    background:var(--surface-2);
+    border-radius:var(--r-sm);
+    border-left:3px solid var(--border);
+    font-size:12px;
+}
+.alert-item.critical{border-left-color:var(--bad);}
+.alert-item.warning{border-left-color:var(--warn);}
+.alert-item.info{border-left-color:var(--info);}
+.alert-item.resolved{border-left-color:var(--ok);opacity:.7;}
+.alert-item .alert-icon{
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    font-weight:800;
+    font-size:11px;
+    color:#fff;
+    flex:0 0 auto;
+}
+.alert-item.critical .alert-icon{background:var(--bad);}
+.alert-item.warning .alert-icon{background:var(--warn);}
+.alert-item.info .alert-icon{background:var(--info);}
+.alert-item.resolved .alert-icon{background:var(--ok);}
+.alert-item .alert-body{flex:1;min-width:0;}
+.alert-item .alert-title{
+    font-weight:600;
+    color:var(--text);
+    margin-bottom:1px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.alert-item .alert-desc{
+    font-size:11px;
+    color:var(--text-2);
+    line-height:1.35;
+}
+.alert-item .alert-time{
+    font-size:10px;
+    color:var(--text-3);
+    font-family:var(--mono);
+    white-space:nowrap;
+    margin-left:auto;
+    padding-left:8px;
+}
+.alert-empty{
+    padding:14px;
+    text-align:center;
+    color:var(--text-3);
+    font-size:12px;
+    font-style:italic;
+}
+
+/* ---------- Quick Actions ---------- */
+.quick-actions{
+    display:flex;
+    gap:8px;
+    padding:14px 18px;
+    border-top:1px solid var(--border);
+    background:var(--surface-2);
+    flex-wrap:wrap;
+}
+.qa-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    height:34px;
+    padding:0 14px;
+    border-radius:var(--r-sm);
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--text);
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .14s ease, border-color .14s ease, box-shadow .14s ease;
+    white-space:nowrap;
+}
+.qa-btn:hover{
+    background:var(--surface-2);
+    border-color:var(--border-2);
+    box-shadow:var(--shadow-xs);
+}
+.qa-btn.primary{
+    background:var(--brand);
+    color:#fff;
+    border-color:var(--brand);
+}
+.qa-btn.primary:hover{
+    background:var(--brand-strong);
+    border-color:var(--brand-strong);
+}
+.qa-btn.danger{
+    background:var(--bad);
+    color:#fff;
+    border-color:var(--bad);
+}
+.qa-btn.danger:hover{
+    background:#b8303a;
+    border-color:#b8303a;
+}
+.qa-btn svg{width:14px;height:14px;flex:0 0 auto;}
+
+/* ---------- Topbar upgrades ---------- */
+.topbar-conn{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+.conn-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--mute);
+    transition:background .2s ease;
+}
+.conn-dot.online{background:var(--ok);}
+.conn-dot.offline{background:var(--bad);}
+.conn-dot.connecting{background:var(--warn);animation:pulse-dot 1s ease-in-out infinite;}
+@keyframes pulse-dot{
+    0%,100%{opacity:1;}
+    50%{opacity:.35;}
+}
+.conn-label{
+    font-size:11px;
+    color:var(--text-2);
+    font-weight:500;
+}
+
+/* ---------- Responsive tweaks ---------- */
+@media (max-width:1120px){
+    .cc-kpi-row{grid-template-columns:repeat(2,1fr);}
+    .health-matrix{grid-template-columns:1fr;}
+    .cluster-row{grid-template-columns:1fr 70px;}
+}
+@media (max-width:720px){
+    .cc-kpi-row{grid-template-columns:1fr;}
+    .cc-module-head{flex-wrap:wrap;gap:6px;}
+    .quick-actions{gap:6px;}
+    .quick-actions .qa-btn{padding:0 10px;font-size:11.5px;}
+}
+
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.health-cell-status{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:11.5px;
+}
+.health-cell-status .hc-label{
+    color:var(--text-2);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    font-size:10px;
+    font-weight:700;
+}
+.health-cell-status .hc-val{
+    font-weight:700;
+    color:var(--text);
+    font-variant-numeric:tabular-nums;
+}
+.health-cell-status .hc-val.ok{color:var(--ok);}
+.health-cell-status .hc-val.warn{color:var(--warn);}
+.health-cell-status .hc-val.bad{color:var(--bad);}
+.cluster-row{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr 80px;
+    gap:8px;
+    align-items:center;
+    padding:8px 10px;
+    background:var(--surface-2);
+    border-radius:var(--r-sm);
+    border:1px solid var(--border);
+    font-size:12px;
+    margin-bottom:6px;
+}
+.cluster-row:last-child{margin-bottom:0;}
+.cluster-row .cr-name{
+    font-weight:600;
+    color:var(--text);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.cluster-row .cr-score{
+    font-weight:800;
+    font-variant-numeric:tabular-nums;
+    text-align:center;
+}
+.cluster-row .cr-score.ok{color:var(--ok);}
+.cluster-row .cr-score.warn{color:var(--warn);}
+.cluster-row .cr-score.bad{color:var(--bad);}
+.cluster-row .cr-bar{
+    height:5px;
+    border-radius:3px;
+    background:var(--border);
+    overflow:hidden;
+}
+.cluster-row .cr-bar-fill{
+    height:100%;
+    border-radius:3px;
+    transition:width .5s ease;
+}
+
+
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- ================= SIDEBAR ================= -->
+
+ <aside class="sidebar">
+
+ <div class="logo">
+
+     <div class="logo-mark">div>
+     <div class="logo-text">
+         <h1>EMAN</h1>
+         <span>Developer Control Center</span>
+     </div>
+ </div>
+
+ <div class="menu-title">Control</div>
+
+ <div class="nav">
+
+ <button class="active" data-page="dashboard" onclick="showPage('dashboard')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>
+     <span>Dashboard</span>
+ </button>
+
+ <button data-page="ai" onclick="showPage('ai')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3M8.5 4.5 10 7M15.5 4.5 14 7M8.5 19.5 10 17M15.5 19.5 14 17"/></svg>
+     <span>AI Brain</span>
+ </button>
+
+ <button data-page="projects" onclick="showPage('projects')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5l9 4.5 9-4.5L12 3Z"/><path d="m3 12.5 9 4.5 9-4.5"/><path d="m3 17 9 4.5 9-4.5"/></svg>
+     <span>Projects</span>
+ </button>
+
+ <button data-page="clients" onclick="showPage('clients')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M15 9h3a2 2 0 0 1 2 2v10"/><path d="M2.5 21h19"/><path d="M7.5 7h4M7.5 11h4M7.5 15h4"/></svg>
+     <span>Client / PT</span>
+ </button>
+
+ <button data-page="requests" onclick="showPage('requests')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-8.5 8.5H7.2L3 23v-6.6A8.5 8.5 0 1 1 21 12Z"/><path d="M12 8v4M12 15.5h.01"/></svg>
+     <span>Feature Request</span>
+     <span class="badge" id="requestBadge">3</span>
+ </button>
+
+ <button data-page="development" onclick="showPage('development')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 17-5-5 5-5"/><path d="m15 7 5 5-5 5"/></svg>
+     <span>Development</span>
+ </button>
+
+ <button data-page="testing" onclick="showPage('testing')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg>
+     <span>Testing / UAT</span>
+ </button>
+
+ <button data-page="deployment" onclick="showPage('deployment')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+     <span>Deployment</span>
+ </button>
+
+ <button data-page="activation" onclick="showPage('activation')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h5M13 17h7"/><circle cx="15" cy="7" r="2.2"/><circle cx="11" cy="17" r="2.2"/></svg>
+     <span>Feature Activation</span>
+ </button>
+
+ <div class="menu-title">Infrastructure</div>
+
+ <button data-page="modules" onclick="showPage('modules')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5"/><path d="M12 12v9"/></svg>
+     <span>Feature &amp; Module</span>
+ </button>
+
+ <button data-page="database" onclick="showPage('database')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+     <span>Database</span>
+ </button>
+
+ <button data-page="monitoring" onclick="showPage('monitoring')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
+     <span>Monitoring</span>
+ </button>
+
+ <button data-page="backup" onclick="showPage('backup')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.6"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>
+     <span>Backup</span>
+ </button>
+
+ <div class="menu-title">Security</div>
+
+ <button data-page="roles" onclick="showPage('roles')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-3.4 7-9V6l-7-3-7 3v6c0 5.6 7 9 7 9Z"/><path d="m9.5 12 1.8 1.8 3.2-3.6"/></svg>
+     <span>Access &amp; Role</span>
+ </button>
+
+ <button data-page="audit" onclick="showPage('audit')">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+     <span>Audit Log</span>
+ </button>
+
+ </div>
+
+ <div class="sidebar-foot">
+     <a href="portal.html" target="_blank"
+        style="display:block;text-align:center;font-size:12px;font-weight:600;
+               color:var(--brand);text-decoration:none;padding:8px;margin-bottom:10px;
+               border:1px dashed var(--border-2);border-radius:9px;">
+         Portal Klien ↗
+     </a>
+     <div class="user-chip">
+         <div class="user-avatar">ED</div>
+         <div class="user-meta">
+             <strong>EMAN Developer</strong>
+             <span>Full access</span>
+         </div>
+     </div>
+ </div>
+
+ </aside>
+
+<!-- ================= MAIN ================= -->
+
+<main class="main">
+
+ <div class="topbar">
+
+ <div class="topbar-title">
+     <h2 id="pageHeader">Dashboard</h2>
+     <p id="pageSubtitle">Ringkasan operasional seluruh project EMAN.</p>
+ </div>
+
+ <div class="top-actions">
+
+     <span class="chip chip-status" id="syncStatus" data-state="connecting" title="Menghubungkan ke Firestore...">
+         <i class="pulse"></i>
+         <b id="syncStatusText">Menghubungkan</b>
+     </span>
+
+     <div class="clock">
+         <b id="liveClock">--:--</b>
+         <span id="liveDate">-</span>
+     </div>
+
+     <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Ganti tema terang atau gelap" title="Ganti tema">
+         <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+         <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
+     </button>
+
+     <button class="btn btn-secondary" onclick="syncNow()">
+         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4.5"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14 4.5"/><path d="M20 20v-4h-4"/></svg>
+         Sync
+     </button>
+
+     <button class="btn btn-primary" onclick="openRequestModal()">
+         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+         Feature Request
+     </button>
+ </div>
+
+ </div>
+
+
+<!-- ================= DASHBOARD ================= -->
+
+  <section id="dashboard" class="page active">
+
+  <div class="page-title">
+  <div>
+    <h1>Control Center</h1>
+    <p>Dashboard utama - pantau seluruh ekosistem aplikasi, pipeline, kesehatan sistem, dan alert secara real-time.</p>
+  </div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+    <div class="topbar-conn">
+      <span class="conn-dot" id="connDot" title="Status koneksi"></span>
+      <span class="conn-label" id="connLabel">Memeriksa koneksi...</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-2);">
+      <span>Terakhir update: <b id="lastUpdate">-</b></span>
+      <button class="qa-btn" onclick="refreshHealth()" title="Perbarui status kesehatan sistem">Refresh</button>
+    </div>
+  </div>
+
+  <h2 style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;margin:0 0 10px;">Ringkasan Kesehatan dan Ekosistem</h2>
+  <div class="cc-kpi-row" id="kpiRow">
+    <div class="cc-kpi">
+      <div class="cc-kpi-head"><span class="cc-kpi-label">Service Aktif</span><span class="cc-kpi-icon brand">ES</span></div>
+      <div class="cc-kpi-value" id="kpiServices">--</div>
+      <div class="cc-kpi-sub"><span>Production, Staging, Development</span><span class="cc-kpi-delta flat" id="kpiServicesDelta">-</span></div>
+      <div class="cc-kpi-trend"><div class="cc-kpi-trend-fill" id="kpiServicesTrend" style="width:0%"></div></div>
+    </div>
+    <div class="cc-kpi">
+      <div class="cc-kpi-head"><span class="cc-kpi-label">Uptime Sistem</span><span class="cc-kpi-icon ok">UP</span></div>
+      <div class="cc-kpi-value" id="kpiUptime">--%</div>
+      <div class="cc-kpi-sub"><span>Rata-rata global</span><span class="cc-kpi-delta up" id="kpiUptimeDelta">Stabil</span></div>
+      <div class="cc-kpi-trend"><div class="cc-kpi-trend-fill" id="kpiUptimeTrend" style="width:0%"></div></div>
+    </div>
+    <div class="cc-kpi">
+      <div class="cc-kpi-head"><span class="cc-kpi-label">Rilis Aktif</span><span class="cc-kpi-icon warn">CD</span></div>
+      <div class="cc-kpi-value" id="kpiReleases">--</div>
+      <div class="cc-kpi-sub"><span>Build pipeline CI/CD</span><span class="cc-kpi-delta" id="kpiReleasesEnv" style="background:var(--info-soft);color:var(--info)">-</span></div>
+      <div class="cc-kpi-trend"><div class="cc-kpi-trend-fill" id="kpiReleasesTrend" style="width:0%"></div></div>
+    </div>
+    <div class="cc-kpi">
+      <div class="cc-kpi-head"><span class="cc-kpi-label">AI Token Burn</span><span class="cc-kpi-icon mute">AI</span></div>
+      <div class="cc-kpi-value" id="kpiTokens">--</div>
+      <div class="cc-kpi-sub"><span>Estimasi biaya harian</span><span class="cc-kpi-delta flat" id="kpiTokensDelta">-</span></div>
+      <div class="cc-kpi-trend"><div class="cc-kpi-trend-fill" id="kpiTokensTrend" style="width:0%"></div></div>
+    </div>
+  </div>
+
+
+  <h2 style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;margin:0 0 10px;">Pipeline dan Aktivitas Pengembangan</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px;">
+    <div class="cc-module">
+      <div class="cc-module-head"><h3>Active PR dan Code Reviews</h3><span class="cc-head-count" id="prCount">0</span></div>
+      <div class="cc-module-body"><div class="pr-list" id="prList"></div><div class="alert-empty" id="prEmpty" style="display:none;">Belum ada PR yang sedang ditinjau.</div></div>
+    </div>
+    <div class="cc-module">
+      <div class="cc-module-head"><h3>Build dan Deployment Queue</h3><span class="cc-head-count" id="buildCount">0</span></div>
+      <div class="cc-module-body"><div class="build-queue" id="buildQueue"></div><div class="alert-empty" id="buildEmpty" style="display:none;">Antrean build kosong.</div></div>
+    </div>
+    <div class="cc-module">
+      <div class="cc-module-head"><h3>Pending Feature Requests</h3><span class="cc-head-count" id="frCount">0</span></div>
+      <div class="cc-module-body"><div class="fr-queue" id="frQueue"></div><div class="alert-empty" id="frEmpty" style="display:none;">Tidak ada request menunggu.</div></div>
+    </div>
+  </div>
+
+  <h2 style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;margin:0 0 10px;">Live Health dan Service Topology</h2>
+  <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:14px;margin-bottom:18px;">
+    <div class="cc-module">
+      <div class="cc-module-head"><h3>Microservices Status</h3><span class="cc-head-count" id="svcCount">0/5</span></div>
+      <div class="cc-module-body"><div class="health-matrix" id="healthMatrix"></div><div class="alert-empty" id="healthEmpty" style="display:none;">Tidak ada service.</div></div>
+    </div>
+    <div class="cc-module">
+      <div class="cc-module-head"><h3>Cluster Health Score</h3><span class="cc-head-count" id="clusterCount">0</span></div>
+      <div class="cc-module-body"><div id="clusterList"></div><div class="alert-empty" id="clusterEmpty" style="display:none;">Tidak ada cluster.</div></div>
+    </div>
+  </div>
+
+  <h2 style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;margin:0 0 10px;">Aktivitas Tim dan Incident Alert Stream</h2>
+  <div class="cc-module">
+    <div class="cc-module-head"><h3>Alert Stream <span class="cc-head-count" id="alertCount">0</span></h3><button class="cc-head-action" onclick="clearResolvedAlerts()">Sembunyikan yang selesai</button></div>
+    <div class="cc-module-body"><div class="alert-stream" id="alertStream"></div><div class="alert-empty" id="alertEmpty" style="display:none;">Tidak ada alert. Sistem sehat.</div></div>
+  </div>
+
+  <h2 style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;margin:0 0 8px;">Aksi Cepat Developer</h2>
+  <div class="quick-actions">
+    <button class="qa-btn primary" onclick="triggerDeploy()" title="Mulai deployment fitur yang sudah siap">Trigger Deploy</button>
+    <button class="qa-btn" onclick="rollbackLast()" title="Rollback ke versi stabil sebelumnya">Rollback</button>
+    <button class="qa-btn" onclick="newFeatureRequest()" title="Buat request fitur baru">+ Feature Request</button>
+    <button class="qa-btn" onclick="aiPlayground()" title="Buka AI playground">AI Playground</button>
+    <button class="qa-btn" onclick="downloadLogSnapshot()" title="Download snapshot log">Download Log</button>
+  </div>
+
+
+  </section>
+
+
+<!-- ================= PROJECTS ================= -->
+
+<section id="projects" class="page">
+
+<div class="page-title">
+<h1>Projects</h1>
+<p>Semua aplikasi yang Anda kelola.</p>
+</div>
+
+<div class="table-box">
+
+<div class="table-head">
+<strong>Project Registry</strong>
+
+<input
+class="search"
+placeholder="Cari project..."
+oninput="filterTable(this,'projectTable')">
+</div>
+
+<table id="projectTable">
+
+<thead>
+<tr>
+<th>Project</th>
+<th>Client</th>
+<th>Platform</th>
+<th>Version</th>
+<th>Status</th>
+<th>Aksi</th>
+</tr>
+</thead>
+
+<tbody id="projectRows"></tbody>
+
+</table>
+</div>
+
+</section>
+
+
+<!-- ================= CLIENT ================= -->
+
+<section id="clients" class="page">
+
+<div class="page-title">
+<h1>Client / PT</h1>
+<p>Data perusahaan dan pemilik project.</p>
+</div>
+
+ <div class="grid" id="clientCards"></div>
+
+ </section>
+
+
+ <!-- ================= PROJECT WORKSPACE ================= -->
+
+ <section id="workspace" class="page">
+
+ <button class="btn btn-secondary btn-back" onclick="showPage('clients')">
+ <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+ Kembali ke Client
+ </button>
+
+ <div class="page-title">
+ <div>
+ <h1 id="wsName">-</h1>
+ <p id="wsClient">-</p>
+
+ <div class="meta-chips">
+ <span class="chip chip-status ws-status" id="wsStatusChip" data-state="offline">
+ <i class="pulse"></i>
+ <b id="wsStatus">-</b>
+ </span>
+
+ <span class="chip">
+ Platform <b id="wsPlatform">-</b>
+ </span>
+
+ <span class="chip">
+ Versi <b id="wsVersion">-</b>
+ </span>
+ </div>
+ </div>
+ </div>
+
+ <div class="stats">
+
+ <div class="stat stat--brand">
+ <div class="stat-top">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-6.5A8 8 0 1 1 21 12Z"/></svg>
+ </span>
+ <span class="stat-tag">Pipeline</span>
+ </div>
+ <div class="stat-label">Feature Request</div>
+ <div class="stat-value" id="wsRequestCount">0</div>
+ <div class="stat-info" id="wsRequestInfo">-</div>
+ </div>
+
+ <div class="stat stat--ok">
+ <div class="stat-top">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5"/><path d="M12 12v9"/></svg>
+ </span>
+ <span class="stat-tag">Tenant</span>
+ </div>
+ <div class="stat-label">Fitur Aktif</div>
+ <div class="stat-value" id="wsFeatureCount">0</div>
+ <div class="stat-info" id="wsFeatureInfo">-</div>
+ </div>
+
+ <div class="stat stat--warn">
+ <div class="stat-top">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><path d="m9 17-5-5 5-5"/><path d="m15 7 5 5-5 5"/></svg>
+ </span>
+ <span class="stat-tag">Workspace</span>
+ </div>
+ <div class="stat-label">Task</div>
+ <div class="stat-value" id="wsTaskCount">0</div>
+ <div class="stat-info" id="wsTaskInfo">-</div>
+ </div>
+
+ <div class="stat stat--info">
+ <div class="stat-top">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+ </span>
+ <span class="stat-tag">Rilis</span>
+ </div>
+ <div class="stat-label">Deployment</div>
+ <div class="stat-value" id="wsDeployCount">0</div>
+ <div class="stat-info" id="wsDeployInfo">-</div>
+ </div>
+
+ </div>
+
+ <div class="split">
+
+ <div class="card">
+ <div class="card-head">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+ </span>
+ <h3>Request Project Ini</h3>
+ <span class="card-hint" id="wsRequestHint">-</span>
+ </div>
+
+ <div class="table-box">
+ <table>
+ <thead>
+ <tr>
+ <th>ID</th>
+ <th>Feature</th>
+ <th>Prioritas</th>
+ <th>Status</th>
+ <th>Dibuat</th>
+ </tr>
+ </thead>
+ <tbody id="wsRequestRows"></tbody>
+ </table>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-head">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+ </span>
+ <h3>Fitur Aktif</h3>
+ <span class="card-hint">Untuk tenant ini</span>
+ </div>
+
+ <div class="ws-list" id="wsFeatures"></div>
+
+ <hr class="divider">
+
+ <div class="card-actions">
+ <button class="btn btn-secondary" onclick="showPage('activation')">
+ Atur Feature Activation
+ </button>
+ </div>
+ </div>
+
+ </div>
+
+ <div class="split">
+
+ <div class="card">
+ <div class="card-head">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+ </span>
+ <h3>Riwayat Deployment</h3>
+ <span class="card-hint">Staging &amp; Production</span>
+ </div>
+
+ <div class="table-box">
+ <table>
+ <thead>
+ <tr>
+ <th>Request</th>
+ <th>Fitur</th>
+ <th>Versi</th>
+ <th>Env</th>
+ <th>Status</th>
+ </tr>
+ </thead>
+ <tbody id="wsDeployRows"></tbody>
+ </table>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-head">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
+ </span>
+ <h3>Aktivitas Project</h3>
+ <span class="card-hint">Audit log</span>
+ </div>
+
+ <div class="feed" id="wsFeed"></div>
+ </div>
+
+ </div>
+
+ <div class="card">
+ <div class="card-head">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg>
+ </span>
+ <h3>Integrasi Project</h3>
+ <span class="card-hint">Tahap berikutnya</span>
+ </div>
+
+ <div class="integration-list" id="wsIntegrations"></div>
+ </div>
+
+ </section>
+
+
+ <!-- ================= FEATURE REQUEST ================= -->
+
+<section id="requests" class="page">
+
+<div class="page-title">
+
+<h1>Feature Request Center</h1>
+
+<p>
+Semua permintaan fitur dari client sebelum masuk proses development.
+</p>
+
+</div>
+
+<div class="table-box">
+
+<div class="table-head">
+
+<strong>Request Queue</strong>
+
+<input
+class="search"
+placeholder="Cari request..."
+oninput="filterTable(this,'requestTable')">
+
+<button class="btn btn-primary"
+onclick="openRequestModal()">
++ Request Baru
+</button>
+
+</div>
+
+<table id="requestTable">
+
+<thead>
+
+<tr>
+<th>ID</th>
+<th>Client / PT</th>
+<th>Project</th>
+<th>Feature</th>
+<th>Priority</th>
+<th>Status</th>
+<th>Aksi</th>
+</tr>
+
+</thead>
+
+<tbody id="requestRows"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<!-- ================= DEVELOPMENT ================= -->
+
+<section id="development" class="page">
+
+<div class="page-title">
+
+<h1>Development Workspace</h1>
+
+<p>
+Daftar pekerjaan coding yang sedang dikerjakan.
+</p>
+
+</div>
+
+<div class="table-box">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Task</th>
+<th>Project</th>
+<th>Developer</th>
+<th>Version</th>
+<th>Status</th>
+<th>Aksi</th>
+</tr>
+
+</thead>
+
+<tbody id="taskRows"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<!-- ================= TESTING ================= -->
+
+<section id="testing" class="page">
+
+<div class="page-title">
+
+<h1>Testing / UAT</h1>
+
+<p>
+Pengujian fitur sebelum diberikan kepada client.
+</p>
+
+</div>
+
+<div class="grid">
+
+<div class="card">
+
+<h3 id="testingTitle">Belum ada fitur yang diuji</h3>
+
+<p id="testingProject">Tidak ada task development aktif.</p>
+
+<div class="timeline">
+
+<div class="timeline-item">
+<div class="dot"></div>
+<div>
+<h4>Development selesai</h4>
+<p id="testingVersion">-</p>
+</div>
+</div>
+
+<div class="timeline-item">
+<div class="dot"></div>
+<div>
+<h4>Testing</h4>
+<p id="testingStatus">Menunggu pengujian</p>
+</div>
+</div>
+
+<div class="timeline-item">
+<div class="dot"></div>
+<div>
+<h4>UAT Client</h4>
+<p id="testingUat">Belum dimulai</p>
+</div>
+</div>
+
+</div>
+
+<div class="card-actions">
+
+<button
+class="btn btn-warning"
+onclick="startTesting()">
+Mulai Testing
+</button>
+
+<button
+class="btn btn-success"
+onclick="passUAT()">
+Lulus UAT
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ================= DEPLOYMENT ================= -->
+
+<section id="deployment" class="page">
+
+<div class="page-title">
+
+<h1>Deployment Center</h1>
+
+<p>
+Kelola versi dan deployment project.
+</p>
+
+</div>
+
+<div class="table-box">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Project</th>
+<th>Version</th>
+<th>Feature</th>
+<th>Environment</th>
+<th>Status</th>
+<th>Aksi</th>
+</tr>
+
+</thead>
+
+<tbody id="deploymentRows"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<!-- ================= ACTIVATION ================= -->
+
+<section id="activation" class="page">
+
+<div class="page-title">
+
+<h1>Feature Activation</h1>
+
+<p>
+Aktifkan fitur secara khusus untuk tenant/client tertentu.
+</p>
+
+</div>
+
+<div class="card">
+
+<h3>Feature Matrix</h3>
+
+<div class="matrix">
+
+<table>
+
+<thead>
+<tr id="matrixHead"></tr>
+</thead>
+
+<tbody id="matrixRows"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ================= MODULE ================= -->
+
+<section id="modules" class="page">
+
+<div class="page-title">
+
+<h1>Feature &amp; Module</h1>
+
+<p>
+Master catalog seluruh fitur yang tersedia.
+</p>
+
+</div>
+
+<div class="grid">
+
+<div class="card">
+<h3>POS / Kasir</h3>
+<p>Modul transaksi penjualan.</p>
+</div>
+
+<div class="card">
+<h3>Inventory</h3>
+<p>Stock dan manajemen barang.</p>
+</div>
+
+<div class="card">
+<h3>Invoice</h3>
+<p>Pembuatan dan pengelolaan invoice.</p>
+</div>
+
+<div class="card">
+<h3>CRM</h3>
+<p>Customer management.</p>
+</div>
+
+<div class="card">
+<h3>Finance</h3>
+<p>Keuangan dan laporan.</p>
+</div>
+
+<div class="card">
+<h3>AI Assistant</h3>
+<p>Fitur AI untuk aplikasi client.</p>
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ================= DATABASE ================= -->
+
+<section id="database" class="page">
+
+<div class="page-title">
+
+<h1>Database Center</h1>
+
+<p>
+Monitoring database setiap tenant/project.
+</p>
+
+</div>
+
+<div class="grid">
+
+<div class="card">
+<h3>Firestore</h3>
+<p>Status: Connected</p>
+<p>Collections: 28</p>
+</div>
+
+<div class="card">
+<h3>Authentication</h3>
+<p>Status: Connected</p>
+<p>Users: 46</p>
+</div>
+
+<div class="card">
+<h3>Security Rules</h3>
+<p>Status: Protected</p>
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ================= AI BRAIN ================= -->
+
+<section id="ai" class="page">
+
+<div class="page-title">
+<h1>AI Brain</h1>
+<p>Analisis cerdas atas seluruh data: klien, project, fitur, testing, dan deployment.</p>
+</div>
+
+<div class="stats">
+
+<div class="stat">
+<div class="stat-label">Health Score</div>
+<div class="stat-value" id="aiHealth">-</div>
+</div>
+
+<div class="stat">
+<div class="stat-label">Project Aktif</div>
+<div class="stat-value" id="aiActive">0</div>
+</div>
+
+<div class="stat">
+<div class="stat-label">Terhambat</div>
+<div class="stat-value" id="aiBlocked">0</div>
+</div>
+
+<div class="stat">
+<div class="stat-label">Selesai</div>
+<div class="stat-value" id="aiDone">0</div>
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="card-head">
+<h3>Analisis &amp; Rekomendasi</h3>
+<button class="btn btn-primary" onclick="aiAnalyze()">
+Analisis Ulang
+</button>
+</div>
+
+<div id="aiInsights"></div>
+
+</div>
+
+<div class="table-box">
+
+<div class="table-head">
+<strong>Deteksi Kesehatan per Project</strong>
+</div>
+
+<table id="aiTable">
+<thead>
+<tr>
+<th>Deteksi</th>
+<th>Project</th>
+<th>Klien</th>
+<th>Versi</th>
+<th>Status</th>
+<th>Rekomendasi AI</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+</div>
+
+</section>
+
+
+<!-- ================= MONITORING ================= -->
+
+<section id="monitoring" class="page">
+
+<div class="page-title">
+
+<h1>Monitoring</h1>
+
+<p>
+Pantau kondisi seluruh aplikasi.
+</p>
+
+</div>
+
+ <div class="stats">
+
+ <div class="stat stat--ok">
+ <div class="stat-top">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z"/></svg>
+ </span>
+ <span class="stat-tag">Uptime</span>
+ </div>
+ <div class="stat-label">Online</div>
+ <div class="stat-value" id="monOnline">2</div>
+ </div>
+
+ <div class="stat stat--bad">
+ <div class="stat-top">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><path d="M12 8v5M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></svg>
+ </span>
+ <span class="stat-tag">Log</span>
+ </div>
+ <div class="stat-label">Error</div>
+ <div class="stat-value">0</div>
+ </div>
+
+ <div class="stat stat--brand">
+ <div class="stat-top">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><path d="M4 18V9M9.5 18V5M15 18v-6M20.5 18v-9"/></svg>
+ </span>
+ <span class="stat-tag">Latency</span>
+ </div>
+ <div class="stat-label">API</div>
+ <div class="stat-value">98%</div>
+ </div>
+
+ <div class="stat stat--mute">
+ <div class="stat-top">
+ <span class="stat-icon">
+ <svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+ </span>
+ <span class="stat-tag">Storage</span>
+ </div>
+ <div class="stat-label">Database</div>
+ <div class="stat-value">OK</div>
+ </div>
+
+ </div>
+
+</section>
+
+
+<!-- ================= BACKUP ================= -->
+
+<section id="backup" class="page">
+
+<div class="page-title">
+
+<h1>Backup Center</h1>
+
+<p>
+Kelola backup database dan konfigurasi project.
+</p>
+
+</div>
+
+<div class="card">
+
+<h3>Backup Terakhir</h3>
+
+<p id="lastBackupText">
+Belum ada backup pada perangkat ini.
+</p>
+
+<div class="card-actions">
+
+<button
+class="btn btn-primary"
+onclick="backupNow()">
+Backup &amp; Unduh
+</button>
+
+<button
+class="btn btn-secondary"
+onclick="restoreBackupClick()">
+Pulihkan dari File
+</button>
+
+<button
+class="btn btn-secondary"
+onclick="pushAllToCloud()">
+Salin Data ke Cloud
+</button>
+
+<button
+class="btn btn-secondary"
+onclick="resetAllData()"
+style="color:var(--bad)">
+Reset Data (Kosongkan)
+</button>
+
+<input
+type="file"
+id="restoreFile"
+accept=".json,application/json"
+style="display:none"
+onchange="restoreBackup(event)">
+
+<button
+class="btn btn-secondary"
+onclick="notify('Daftar backup dibuka')">
+Riwayat Backup
+</button>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ================= ROLES ================= -->
+
+<section id="roles" class="page">
+
+<div class="page-title">
+
+<h1>Access &amp; Role</h1>
+
+<p>
+Kelola akses developer dan user client.
+</p>
+
+</div>
+
+<div class="table-box">
+
+<table>
+
+<thead>
+
+<tr>
+<th>User</th>
+<th>Role</th>
+<th>Tenant</th>
+<th>Status</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+<td>EMAN Developer</td>
+<td>Developer Owner</td>
+<td>ALL</td>
+<td><span class="status status-green">ACTIVE</span></td>
+</tr>
+
+<tr>
+<td>Admin IZKATECH</td>
+<td>Business Admin</td>
+<td>PT Ihza</td>
+<td><span class="status status-green">ACTIVE</span></td>
+</tr>
+
+<tr>
+<td>Kasir IZKATECH</td>
+<td>Cashier</td>
+<td>PT Ihza</td>
+<td><span class="status status-green">ACTIVE</span></td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<!-- ================= AUDIT ================= -->
+
+<section id="audit" class="page">
+
+<div class="page-title">
+
+<h1>Audit Log</h1>
+
+<p>
+Catatan aktivitas developer dan user.
+</p>
+
+</div>
+
+<div class="table-box">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Waktu</th>
+<th>Actor</th>
+<th>Project</th>
+<th>Action</th>
+<th>Target</th>
+</tr>
+
+</thead>
+
+<tbody id="auditRows"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+</main>
+</div>
+
+
+<!-- ================= REQUEST MODAL ================= -->
+
+<div class="modal" id="requestModal">
+
+<div class="modal-box">
+
+<div class="modal-header">
+
+<h2>Feature Request Baru</h2>
+
+<button class="close"
+onclick="closeRequestModal()">×</button>
+
+</div>
+
+<div class="form-grid">
+
+<div class="form-group">
+
+<label>Client / PT</label>
+
+<select id="requestClient"
+onchange="syncProjectOptions()"></select>
+
+</div>
+
+<div class="form-group">
+
+<label>Project</label>
+
+<select id="requestProject"></select>
+
+</div>
+
+<div class="form-group">
+
+<label>Nama Feature</label>
+
+<input
+id="requestFeature"
+placeholder="Contoh: Cetak Invoice">
+
+</div>
+
+<div class="form-group">
+
+<label>Priority</label>
+
+<select id="requestPriority">
+
+<option>LOW</option>
+<option>NORMAL</option>
+<option>MEDIUM</option>
+<option>HIGH</option>
+<option>CRITICAL</option>
+
+</select>
+
+</div>
+
+<div class="form-group full">
+
+<label>Detail Request</label>
+
+<textarea
+id="requestDescription"
+placeholder="Jelaskan kebutuhan fitur..."></textarea>
+
+</div>
+
+</div>
+
+<div class="form-actions">
+
+<button
+class="btn btn-secondary"
+onclick="closeRequestModal()">
+Batal
+</button>
+
+<button
+class="btn btn-primary"
+onclick="saveRequest()">
+Simpan Request
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ================= REQUEST DETAIL ================= -->
+
+<div class="modal" id="detailModal">
+
+<div class="modal-box">
+
+<div class="modal-header">
+
+<h2 id="detailTitle">Request #REQ-001</h2>
+
+<button
+class="close"
+onclick="closeDetail()">×</button>
+
+</div>
+
+<div class="card">
+
+<h3 id="detailFeature">-</h3>
+
+<p id="detailClient">Client: -</p>
+
+<p id="detailProject">Project: -</p>
+
+<p id="detailPriority">Priority: -</p>
+
+<p id="detailStatus">Status: -</p>
+
+<p id="detailDescription" style="margin-top:10px">-</p>
+
+</div>
+
+<div class="card-actions">
+
+<button
+class="btn btn-primary"
+id="detailApproveBtn"
+onclick="approveRequest()">
+Terima Request
+</button>
+
+<button
+class="btn btn-success"
+id="detailProjectBtn"
+onclick="enterProject(this.getAttribute('data-project'))">
+Masuk ke Project
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+
+<script>
+
+/* =====================================================
+   EMAN DEVELOPER CENTER
+   Data disimpan di localStorage (key: eman_state_v2)
+   ===================================================== */
+
+const STORAGE_KEY = 'eman_state_v3';
+
+/* Data awal KOSONG — aplikasi siap diisi data asli Anda.
+   Tambahkan klien pertama lewat menu "Client / PT". */
+const SEED = {
+
+    clients:[],
+
+    projects:[],
+
+    requests:[],
+
+    tasks:[],
+
+    deployments:[],
+
+    features:[],
+
+    audit:[],
+
+    lastBackup:null
+};
+
+const TITLES = {
+    dashboard:'Dashboard',
+    ai:'AI Brain',
+    projects:'Projects',
+     clients:'Client / PT',
+     workspace:'Project Workspace',
+    requests:'Feature Request',
+    development:'Development',
+    testing:'Testing / UAT',
+    deployment:'Deployment',
+    activation:'Feature Activation',
+    modules:'Feature & Module',
+    database:'Database',
+    monitoring:'Monitoring',
+    backup:'Backup',
+    roles:'Access & Role',
+     audit:'Audit Log'
+};
+
+const SUBTITLES = {
+     dashboard:'Ringkasan operasional seluruh project EMAN.',
+     ai:'Analisis cerdas, deteksi masalah, dan rekomendasi otomatis.',
+     projects:'Registry semua aplikasi yang Anda kelola.',
+     clients:'Data perusahaan dan pemilik project.',
+     workspace:'Ringkasan project, fitur aktif, dan riwayat rilis.',
+     requests:'Permintaan fitur dari client beserta statusnya.',
+     development:'Pekerjaan coding yang sedang berjalan.',
+     testing:'Pengujian fitur sebelum diserahkan ke client.',
+     deployment:'Kelola versi dan rilis ke environment client.',
+     activation:'Aktifkan fitur per tenant / client.',
+     modules:'Master catalog seluruh fitur yang tersedia.',
+     database:'Monitoring database setiap tenant / project.',
+     monitoring:'Pantau kondisi seluruh aplikasi.',
+     backup:'Kelola backup database dan konfigurasi project.',
+     roles:'Role dan hak akses pengguna dashboard.',
+     audit:'Catatan aktivitas developer dan user.'
+};
+
+const STATUS_CLASS = {
+    ONLINE:'status-green',
+    ACTIVE:'status-green',
+    READY:'status-green',
+    DEPLOYED:'status-green',
+    DEVELOPMENT:'status-orange',
+    TESTING:'status-orange',
+    UAT:'status-orange',
+    CODING:'status-blue',
+    REQUESTED:'status-blue',
+    MEDIUM:'status-orange',
+    NORMAL:'status-blue',
+    APPROVED:'status-gray',
+    PLANNING:'status-gray',
+    LOW:'status-gray',
+    OFFLINE:'status-red',
+    FAILED:'status-red',
+    HIGH:'status-red',
+    CRITICAL:'status-red'
+};
+
+const IN_PROGRESS = ['REQUESTED','APPROVED','DEVELOPMENT','CODING','TESTING','UAT'];
+const ACTIVE_TEST  = ['DEVELOPMENT','CODING','TESTING','UAT','READY'];
+
+let state = load();
+let activeRequestId = null;
+
+
+/* ================= STORAGE ================= */
+
+function clone(obj){
+    return JSON.parse(JSON.stringify(obj));
+}
+
+function load(){
+    try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){
+            const parsed = JSON.parse(raw);
+            if(parsed && Array.isArray(parsed.projects) && Array.isArray(parsed.requests)){
+                return parsed;
+            }
+        }
+    }catch(err){
+        console.warn('State tidak dapat dibaca, memakai data awal.', err);
+    }
+    var base = clone(SEED);
+    try{if(typeof CC_SEED!=='undefined'){for(var k in CC_SEED){if(base[k]===undefined){base[k]=JSON.parse(JSON.stringify(CC_SEED[k]));}}}if(typeof CC_SEED_B!=='undefined'){for(var k in CC_SEED_B){if(base[k]===undefined){base[k]=JSON.parse(JSON.stringify(CC_SEED_B[k]));}}}if(typeof CC_SEED_C!=='undefined'){for(var k in CC_SEED_C){if(base[k]===undefined){base[k]=JSON.parse(JSON.stringify(CC_SEED_C[k]));}}}}catch(e){}
+    if(base){for(var _i=0;_i<3;_i++){}}
+    return base;
+}
+
+ function persist(){
+     try{
+         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+     }catch(err){
+         console.warn('localStorage tidak tersedia, perubahan hanya berlaku selama sesi ini.', err);
+     }
+ }
+
+
+ /* ================= TEMA ================= */
+
+ const THEME_KEY = 'eman_theme';
+
+ function readTheme(){
+     try{
+         const saved = localStorage.getItem(THEME_KEY);
+         if(saved === 'dark' || saved === 'light'){ return saved; }
+     }catch(err){}
+     return 'light';
+ }
+
+ function applyTheme(theme){
+     const dark = theme === 'dark';
+     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+
+     const btn = $('themeToggle');
+     if(btn){ btn.setAttribute('aria-pressed', dark ? 'true' : 'false'); }
+ }
+
+ function toggleTheme(){
+     const next = readTheme() === 'dark' ? 'light' : 'dark';
+
+     try{
+         localStorage.setItem(THEME_KEY, next);
+     }catch(err){}
+
+     applyTheme(next);
+     toast(next === 'dark' ? 'Mode gelap diaktifkan' : 'Mode terang diaktifkan');
+ }
+
+
+ /* ================= BACKEND (FIRESTORE) ================= */
+
+ /*
+    Dashboard tetap bisa dibuka tanpa internet: data dibaca dari cache
+    localStorage dulu, lalu ditimpa data Firestore begitu terhubung.
+    Penulisan ke Firestore dilakukan lewat save() di bawah.
+    Jembatan ke Firebase-nya ada di <script type="module"> paling bawah.
+ */
+
+ function collectionNames(){
+     return window.EMAN_COLLECTIONS || {
+         clients:'clients',
+         projects:'projects',
+         requests:'requests',
+         tasks:'tasks',
+         deployments:'deployments',
+         features:'features',
+         audit:'audit',
+         meta:'meta'
+     };
+ }
+
+ const COLL = collectionNames();
+
+ function slug(value){
+     return String(value || '')
+         .toLowerCase()
+         .replace(/[^a-z0-9]+/g,'-')
+         .replace(/^-+|-+$/g,'') || 'tanpa-nama';
+ }
+
+ /* Koleksi -> doc id, supaya id dokumen selalu konsisten.
+    null = biarkan Firestore membuat id otomatis (untuk log). */
+ function docIdFor(collectionName, item){
+     if(collectionName === COLL.clients){     return item.key; }
+     if(collectionName === COLL.projects){    return slug(item.name); }
+     if(collectionName === COLL.requests){    return item.id; }
+     if(collectionName === COLL.tasks){       return item.requestId; }
+     if(collectionName === COLL.deployments){ return item.requestId; }
+     if(collectionName === COLL.features){    return item.key; }
+     if(collectionName === COLL.meta){        return 'app'; }
+
+     return null;
+ }
+
+ /* Simpan satu dokumen ke Firestore. Kalau backend belum siap,
+    fungsi ini diam saja dan data tetap aman di cache lokal. */
+ function save(collectionName, item){
+     const api = window.EmanAPI;
+
+     if(!api || !api.ready){ return; }
+     if(!item){ return; }
+
+     api.write(collectionName, docIdFor(collectionName, item), item)
+         .then(function(ok){
+             if(!ok){
+                 toast('Tersimpan lokal, tapi gagal terkirim ke Firestore','error');
+             }
+         });
+ }
+
+ /* Timpa state lokal dengan data dari Firestore, lalu gambar ulang. */
+ function applyRemoteState(remote){
+     if(!remote){ return; }
+
+     state.clients     = remote.clients;
+     state.projects    = remote.projects;
+     state.requests    = remote.requests;
+     state.tasks       = remote.tasks;
+     state.deployments = remote.deployments;
+     state.features    = remote.features;
+     state.audit       = remote.audit;
+     state.lastBackup  = remote.lastBackup;
+     try{if(typeof ccState==='function'){ccState();}}catch(e){}
+
+     persist();
+     renderAll();
+ }
+
+
+ /* ================= HELPERS ================= */
+
+ function $(id){
+    return document.getElementById(id);
+}
+
+function setText(id,value){
+    const el = $(id);
+    if(el){ el.innerText = value; }
+}
+
+function val(id){
+    const el = $(id);
+    return el ? el.value : '';
+}
+
+function esc(value){
+    return String(value === null || value === undefined ? '' : value)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+}
+
+function badge(value){
+    const cls = STATUS_CLASS[value] || 'status-gray';
+    return '<span class="status ' + cls + '">' + esc(value) + '</span>';
+}
+
+function clock(){
+    const d = new Date();
+    return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function formatDateTime(iso){
+    if(!iso){ return '-'; }
+    const d = new Date(iso);
+    if(isNaN(d.getTime())){ return '-'; }
+    const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+     return d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear() + ' — ' +
+            String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+ }
+
+ function formatShort(iso){
+     if(!iso){ return '-'; }
+     const d = new Date(iso);
+     if(isNaN(d.getTime())){ return '-'; }
+     const bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+     return d.getDate() + ' ' + bulan[d.getMonth()] + ', ' +
+            String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+ }
+
+ const HARI  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+ const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+ function updateClock(){
+     const d = new Date();
+     setText('liveClock', String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'));
+     setText('liveDate', HARI[d.getDay()] + ', ' + d.getDate() + ' ' + BULAN[d.getMonth()] + ' ' + d.getFullYear());
+ }
+
+function clientName(key){
+    const c = state.clients.find(x => x.key === key);
+    return c ? c.short : key;
+}
+
+function projectNameOfClient(name){
+    const c = state.clients.find(x => x.name === name);
+    return c ? c.project : '';
+}
+
+
+/* ================= AUDIT ================= */
+
+function logAudit(action, project, target){
+    const entry = {
+        time: clock(),
+        actor:'EMAN Developer',
+        project: project || '-',
+        action: action,
+        target: target || '-',
+        createdAt:new Date().toISOString()
+    };
+
+    state.audit.unshift(entry);
+    state.audit = state.audit.slice(0,50);
+
+    /* id sengaja null -> Firestore yang membuat id unik, karena log
+       bersifat tambah-terus dan boleh punya isi yang sama. */
+    save(COLL.audit, entry);
+}
+
+
+/* ================= RENDER : DASHBOARD ================= */
+
+function renderStats(){
+    const inProgress = state.requests.filter(r => IN_PROGRESS.includes(r.status)).length;
+    const openTasks  = state.tasks.filter(t => t.status !== 'DEPLOYED').length;
+    const online     = state.projects.filter(p => p.status === 'ONLINE').length;
+
+    setText('statProjects', state.projects.length);
+    setText('statRequests', inProgress);
+    setText('statDevelopment', openTasks);
+    setText('statOnline', online);
+    setText('monOnline', online);
+    setText('requestBadge', inProgress);
+}
+
+function renderDashboardCards(){
+    const latest = state.requests[state.requests.length - 1];
+    const btn = $('latestRequestBtn');
+
+    if(latest){
+        setText('latestRequestText', latest.client + ' meminta fitur ' + latest.feature + ' (' + latest.id + ').');
+        btn.setAttribute('data-id', latest.id);
+        btn.disabled = false;
+    }else{
+        setText('latestRequestText', 'Belum ada feature request.');
+        btn.removeAttribute('data-id');
+        btn.disabled = true;
+    }
+
+    const openTasks = state.tasks.filter(t => t.status !== 'DEPLOYED').length;
+    setText('devSummary', openTasks + ' fitur sedang dikerjakan pada project client.');
+
+     const ready = state.deployments.filter(d => d.status === 'READY').length;
+     setText('deploySummary', ready + ' fitur siap masuk deployment.');
+ }
+
+ const PROJECT_STATUS_STYLE = {
+     ONLINE:      { color:'var(--ok)',   label:'Online' },
+     DEVELOPMENT: { color:'var(--warn)', label:'Development' },
+     PLANNING:    { color:'var(--mute)', label:'Planning' },
+     OFFLINE:     { color:'var(--bad)',  label:'Offline' }
+ };
+
+ const PIPELINE_ORDER = ['REQUESTED','APPROVED','DEVELOPMENT','CODING','TESTING','UAT','READY','DEPLOYED'];
+
+ const PIPELINE_TONE = {
+     REQUESTED:'bar--brand',
+     APPROVED:'bar--brand',
+     DEVELOPMENT:'bar--warn',
+     CODING:'bar--warn',
+     TESTING:'bar--warn',
+     UAT:'bar--warn',
+     READY:'bar--ok',
+     DEPLOYED:'bar--ok'
+ };
+
+ const FEED_ICON = {
+     brand:'<svg viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-8.5 8.5H7.2L3 23v-6.6A8.5 8.5 0 1 1 21 12Z"/></svg>',
+     ok:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg>',
+     warn:'<svg viewBox="0 0 24 24"><path d="M12 8v5M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></svg>',
+     mute:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h.01"/></svg>'
+ };
+
+ function feedTone(action){
+     const a = String(action || '').toUpperCase();
+
+     if(a === 'DEPLOY' || a === 'UAT_PASS' || a === 'BACKUP'){ return 'ok'; }
+     if(a === 'TESTING'){ return 'warn'; }
+     if(a === 'FEATURE_REQUEST' || a === 'REQUEST_APPROVED' || a === 'FEATURE_ON'){ return 'brand'; }
+
+     return 'mute';
+ }
+
+ function renderDashboardExtras(){
+
+     setText('dashClientCount', state.clients.length);
+     setText('dashBackup', state.lastBackup ? formatShort(state.lastBackup) : '-');
+
+     /* --- Donut distribusi status project --- */
+
+     const counts = {};
+
+     state.projects.forEach(p => {
+         counts[p.status] = (counts[p.status] || 0) + 1;
+     });
+
+     const entries = Object.keys(counts).map(key => ({
+         key: key,
+         count: counts[key],
+         color: (PROJECT_STATUS_STYLE[key] || {}).color || 'var(--info)',
+         label: (PROJECT_STATUS_STYLE[key] || {}).label || key
+     })).sort((a,b) => (b.count - a.count) || a.key.localeCompare(b.key));
+
+     const total = state.projects.length;
+     let angle = 0;
+
+     const stops = entries.map(e => {
+         const start = angle;
+         angle += total ? (e.count / total) * 360 : 0;
+         return e.color + ' ' + start.toFixed(2) + 'deg ' + angle.toFixed(2) + 'deg';
+     });
+
+     const donut = $('dashDonut');
+
+     if(donut){
+         donut.style.background = stops.length
+             ? 'conic-gradient(' + stops.join(',') + ')'
+             : 'conic-gradient(var(--mute-soft) 0deg 360deg)';
+     }
+
+     setText('dashDonutTotal', total);
+
+     const legend = $('dashLegend');
+
+     if(legend){
+         legend.innerHTML = entries.map(e =>
+             '<div class="legend-item">' +
+                 '<span class="legend-dot" style="background:' + e.color + '"></span>' +
+                 '<span class="legend-name">' + esc(e.label) + '</span>' +
+                 '<span class="legend-val">' + e.count +
+                     (total ? '<small>' + Math.round((e.count / total) * 100) + '%</small>' : '') +
+                 '</span>' +
+             '</div>'
+         ).join('') || '<p class="empty">Belum ada project.</p>';
+     }
+
+     /* --- Pipeline feature request --- */
+
+     const reqTotal = state.requests.length;
+     const pipeline = PIPELINE_ORDER
+         .map(status => ({
+             status: status,
+             count: state.requests.filter(r => r.status === status).length
+         }))
+         .filter(item => item.count > 0);
+
+     const pipe = $('dashPipeline');
+
+     if(pipe){
+         pipe.innerHTML = pipeline.map(item => {
+             const pct = reqTotal ? (item.count / reqTotal) * 100 : 0;
+
+             return '<div class="bar-row">' +
+                 '<div class="bar-row-head">' +
+                     '<span>' + esc(item.status) + '</span>' +
+                     '<b>' + item.count + ' / ' + reqTotal + '</b>' +
+                 '</div>' +
+                 '<div class="bar ' + (PIPELINE_TONE[item.status] || 'bar--mute') + '">' +
+                     '<i style="width:' + pct.toFixed(1) + '%"></i>' +
+                 '</div>' +
+             '</div>';
+         }).join('') || '<p class="empty">Belum ada feature request.</p>';
+     }
+
+     /* --- Feed aktivitas terbaru --- */
+
+     const feed = $('dashFeed');
+
+     if(feed){
+         feed.innerHTML = state.audit.slice(0,5).map(a => {
+             const tone = feedTone(a.action);
+
+             return '<div class="feed-item">' +
+                 '<span class="feed-icon tone-' + tone + '">' + FEED_ICON[tone] + '</span>' +
+                 '<div class="feed-body">' +
+                     '<strong>' + esc(a.action) + '</strong>' +
+                     '<p>' + esc(a.project) + ' &middot; ' + esc(a.target) + ' &middot; ' + esc(a.actor) + '</p>' +
+                 '</div>' +
+                 '<span class="feed-time">' + esc(a.time) + '</span>' +
+             '</div>';
+         }).join('') || '<p class="empty">Belum ada aktivitas.</p>';
+     }
+ }
+
+
+/* ================= RENDER : PROJECTS ================= */
+
+function renderProjects(){
+    const rows = state.projects.map(p =>
+        '<tr>' +
+        '<td>' + esc(p.name) + '</td>' +
+        '<td>' + esc(p.client) + '</td>' +
+        '<td>' + esc(p.platform) + '</td>' +
+        '<td>' + esc(p.version) + '</td>' +
+        '<td>' + badge(p.status) + '</td>' +
+        '<td><button class="btn btn-primary" data-project="' + esc(p.name) + '" ' +
+        'onclick="enterProject(this.getAttribute(\'data-project\'))">Masuk Project</button></td>' +
+        '</tr>'
+    ).join('');
+
+    $('projectRows').innerHTML = rows || '<tr><td colspan="6" class="empty">Belum ada project terdaftar.</td></tr>';
+}
+
+
+/* ================= RENDER : CLIENTS ================= */
+
+function renderClients(){
+    $('clientCards').innerHTML = state.clients.map(c =>
+        '<div class="card">' +
+        '<h3>' + esc(c.name) + '</h3>' +
+        '<p>Project: ' + esc(c.project) + '</p>' +
+        '<p>Status: ' + esc(c.status) + '</p>' +
+        '<div class="card-actions">' +
+        '<button class="btn btn-primary" data-project="' + esc(c.project) + '" ' +
+        'onclick="enterProject(this.getAttribute(\'data-project\'))">Masuk Project</button>' +
+        '</div>' +
+        '</div>'
+    ).join('');
+}
+
+
+/* ================= RENDER : REQUESTS ================= */
+
+function renderRequests(){
+    const rows = state.requests.map(r =>
+        '<tr>' +
+        '<td>' + esc(r.id) + '</td>' +
+        '<td>' + esc(r.client) + '</td>' +
+        '<td>' + esc(r.project) + '</td>' +
+        '<td>' + esc(r.feature) + '</td>' +
+        '<td>' + badge(r.priority) + '</td>' +
+        '<td>' + badge(r.status) + '</td>' +
+        '<td><button class="btn btn-primary" data-id="' + esc(r.id) + '" ' +
+        'onclick="openRequestDetail(this.getAttribute(\'data-id\'))">Detail</button></td>' +
+        '</tr>'
+    ).join('');
+
+    $('requestRows').innerHTML = rows || '<tr><td colspan="7" class="empty">Belum ada request.</td></tr>';
+}
+
+
+/* ================= RENDER : DEVELOPMENT ================= */
+
+function renderTasks(){
+    const rows = state.tasks.map(t =>
+        '<tr>' +
+        '<td>' + esc(t.feature) + '</td>' +
+        '<td>' + esc(t.project) + '</td>' +
+        '<td>' + esc(t.developer) + '</td>' +
+        '<td>' + esc(t.version) + '</td>' +
+        '<td>' + badge(t.status) + '</td>' +
+        '<td><button class="btn btn-primary" data-project="' + esc(t.project) + '" ' +
+        'onclick="enterProject(this.getAttribute(\'data-project\'))">MASUK PROJECT</button></td>' +
+        '</tr>'
+    ).join('');
+
+    $('taskRows').innerHTML = rows || '<tr><td colspan="6" class="empty">Belum ada pekerjaan coding.</td></tr>';
+}
+
+
+/* ================= RENDER : TESTING ================= */
+
+function renderTesting(){
+    const r = state.requests.find(x => ACTIVE_TEST.includes(x.status));
+    const t = r ? state.tasks.find(x => x.requestId === r.id) : null;
+
+    setText('testingTitle', r ? r.feature : 'Belum ada fitur yang diuji');
+    setText('testingProject', r ? 'Project: ' + r.project : 'Tidak ada task development aktif.');
+    setText('testingVersion', t ? t.version : '-');
+    setText('testingStatus',
+        !r ? 'Menunggu pengujian'
+           : r.status === 'DEVELOPMENT' || r.status === 'CODING' ? 'Menunggu pengujian'
+           : r.status === 'READY' || r.status === 'DEPLOYED' ? 'Lulus'
+           : 'Sedang diuji'
+    );
+    setText('testingUat',
+        !r ? 'Belum dimulai'
+           : r.status === 'READY' || r.status === 'DEPLOYED' ? 'Disetujui client'
+           : r.status === 'UAT' ? 'Sedang berjalan'
+           : 'Belum dimulai'
+    );
+}
+
+
+/* ================= RENDER : DEPLOYMENT ================= */
+
+function renderDeployments(){
+    $('deploymentRows').innerHTML = state.deployments.map((d,index) =>
+        '<tr>' +
+        '<td>' + esc(d.project) + '</td>' +
+        '<td>' + esc(d.version) + '</td>' +
+        '<td>' + esc(d.feature) + '</td>' +
+        '<td>' + esc(d.env) + '</td>' +
+        '<td>' + badge(d.status) + '</td>' +
+        '<td>' + (d.status === 'DEPLOYED'
+            ? '<button class="btn btn-secondary" disabled>Sudah live</button>'
+            : '<button class="btn btn-success" data-project="' + esc(d.project) + '" data-index="' + index + '" ' +
+              'onclick="deployProject(this.getAttribute(\'data-project\'), this.getAttribute(\'data-index\'))">Deploy</button>') +
+        '</td>' +
+        '</tr>'
+    ).join('') || '<tr><td colspan="6" class="empty">Belum ada item deployment.</td></tr>';
+}
+
+
+/* ================= RENDER : FEATURE MATRIX ================= */
+
+function renderMatrix(){
+    $('matrixHead').innerHTML =
+        '<th>Feature</th>' +
+        state.clients.map(c => '<th>' + esc(c.short) + '</th>').join('');
+
+    const rows = state.features.map(f =>
+        '<tr>' +
+        '<td>' + esc(f.name) + '</td>' +
+        state.clients.map(c => {
+            const on = !!(f.active && f.active[c.key]);
+            return '<td>' +
+                '<span class="toggle' + (on ? ' on' : '') + '"' +
+                ' role="switch" tabindex="0"' +
+                ' aria-checked="' + (on ? 'true' : 'false') + '"' +
+                ' aria-label="' + esc(f.name + ' untuk ' + c.name) + '"' +
+                ' data-feature="' + esc(f.key) + '" data-tenant="' + esc(c.key) + '"' +
+                ' onclick="toggleFeature(this)"></span>' +
+                '</td>';
+        }).join('') +
+        '</tr>'
+    ).join('');
+
+    $('matrixRows').innerHTML = rows || '<tr><td class="empty">Belum ada fitur.</td></tr>';
+}
+
+
+/* ================= RENDER : BACKUP & AUDIT ================= */
+
+function renderBackup(){
+    setText('lastBackupText', state.lastBackup
+        ? formatDateTime(state.lastBackup) + ' WIB'
+        : 'Belum ada backup pada perangkat ini.');
+}
+
+function renderAudit(){
+    const rows = state.audit.map(a =>
+        '<tr>' +
+        '<td>' + esc(a.time) + '</td>' +
+        '<td>' + esc(a.actor) + '</td>' +
+        '<td>' + esc(a.project) + '</td>' +
+        '<td>' + esc(a.action) + '</td>' +
+        '<td>' + esc(a.target) + '</td>' +
+        '</tr>'
+    ).join('');
+
+    $('auditRows').innerHTML = rows || '<tr><td colspan="5" class="empty">Belum ada aktivitas.</td></tr>';
+}
+
+
+/* ================= RENDER : FORM REQUEST ================= */
+
+function renderRequestForm(){
+    const clientSelect = $('requestClient');
+    const current = clientSelect.value;
+
+    clientSelect.innerHTML = state.clients
+        .map(c => '<option value="' + esc(c.name) + '">' + esc(c.name) + '</option>')
+        .join('');
+
+    if(current){
+        clientSelect.value = current;
+    }
+
+    syncProjectOptions();
+}
+
+function syncProjectOptions(){
+    const client = val('requestClient');
+    const projectSelect = $('requestProject');
+    const current = projectSelect.value;
+
+    let options = state.projects.filter(p => p.client === client);
+
+    if(!options.length){
+        const owner = state.clients.find(c => c.name === client);
+        options = owner
+            ? state.projects.filter(p => p.name === owner.project)
+            : [];
+    }
+
+    if(!options.length){
+        options = state.projects.slice();
+    }
+
+    projectSelect.innerHTML = options
+        .map(p => '<option value="' + esc(p.name) + '">' + esc(p.name) + '</option>')
+        .join('');
+
+    if(current && options.some(p => p.name === current)){
+        projectSelect.value = current;
+    }
+}
+
+
+/* ================= RENDER ALL ================= */
+
+ window.getEmanState = function(){ return state; };
+
+ function renderAll(){
+     renderStats();
+     renderDashboardCards();
+     renderDashboardExtras();
+     renderWorkspace();
+    renderProjects();
+    renderClients();
+    renderRequests();
+    renderTasks();
+    renderTesting();
+    renderDeployments();
+    renderMatrix();
+    renderBackup();
+    renderAudit();
+    renderRequestForm();
+    try{renderControlCenter();}catch(e){console.warn(e);}
+    aiAnalyze();
+}
+
+
+
+
+/* ================= CONTROL CENTER: FUNGSI ================= */
+/* ================= CONTROL CENTER: DATA DEFAULT ================= */
+var CC_SEED = {
+ microservices:[
+  {id:'auth',name:'Auth / IAM',icon:'AI',status:'up',latency:42,uptime:99.97},
+  {id:'firestore',name:'Firestore / DB',icon:'DB',status:'up',latency:156,uptime:99.99},
+  {id:'webhooks',name:'Webhooks / Payment',icon:'WH',status:'up',latency:88,uptime:99.95},
+  {id:'cdn',name:'CDN Edge',icon:'CD',status:'up',latency:24,uptime:99.99},
+  {id:'serverless',name:'Serverless Functions',icon:'FN',status:'up',latency:210,uptime:99.92}
+ ],
+ clusters:[
+  {name:'Jakarta Cluster',score:97,nodes:12,status:'healthy'},
+  {name:'Singapore Edge',score:94,nodes:8,status:'healthy'},
+  {name:'Backup Node (JKT)',score:88,nodes:3,status:'degraded'}
+ ],
+ deployQueue:[
+  {id:'B-001',project:'Catalog Pro',version:'v2.4.2',feature:'Live Search + Filter',env:'staging',status:'running',progress:62,started:'14:32'},
+  {id:'B-002',project:'Inventory App',version:'v1.8.0',feature:'Stock Sync API',env:'production',status:'pending',progress:0,started:'-'},
+  {id:'B-003',project:'Client Portal',version:'v3.2.1',feature:'Dashboard Rebuild',env:'staging',status:'pending',progress:0,started:'-'},
+  {id:'B-004',project:'Notifikasi Hub',version:'v1.1.4',feature:'Push Notification v2',env:'production',status:'pending',progress:0,started:'-'}
+ ]
+};
+function ccStateA(){
+ if(!state.microservices) state.microservices = JSON.parse(JSON.stringify(CC_SEED.microservices));
+ if(!state.clusters) state.clusters = JSON.parse(JSON.stringify(CC_SEED.clusters));
+ if(!state.deployQueue) state.deployQueue = JSON.parse(JSON.stringify(CC_SEED.deployQueue));
+}
+
+
+/* ================= CONTROL CENTER: DATA B ================= */
+var CC_SEED_B = {
+ prReviews:[
+  {id:'PR-47',title:'Refactor Auth Service',author:'Ahmad R.',branch:'feat/auth-v2',status:'review',files:6,age:'2 jam'},
+  {id:'PR-46',title:'Fix Stock Sync Race Condition',author:'Sari D.',branch:'fix/stock-race',status:'approved',files:2,age:'5 jam'},
+  {id:'PR-45',title:'Dashboard Widget Performance',author:'Budi K.',branch:'perf/widgets',status:'changes',files:4,age:'1 hari'}
+ ],
+ pendingFR:[
+  {id:'FR-12',title:'Export Laporan PDF',client:'PT Ihza Karya',priority:'high',status:'pending',submitted:'19 Okt'},
+  {id:'FR-11',title:'Dark Mode untuk Portal',client:'TRENS LOGISTIC',priority:'medium',status:'pending',submitted:'18 Okt'},
+  {id:'FR-10',title:'Role-Based Access Control',client:'Client Demo Store',priority:'critical',status:'pending',submitted:'17 Okt'},
+  {id:'FR-09',title:'Multi-Bahasa (ID/EN)',client:'PT Ihza Karya',priority:'medium',status:'pending',submitted:'16 Okt'}
+ ]
+};
+function ccStateB(){
+ if(!state.prReviews) state.prReviews = JSON.parse(JSON.stringify(CC_SEED_B.prReviews));
+ if(!state.pendingFR) state.pendingFR = JSON.parse(JSON.stringify(CC_SEED_B.pendingFR));
+}
+
+
+/* ================= CONTROL CENTER: DATA C ================= */
+var CC_SEED_C = {
+ alerts:[
+  {id:'ALT-001',type:'critical',title:'SSL Certificate Expiring Soon',desc:'Domain eman-center.id kedaluwarsa dalam 7 hari.',time:'14:28',resolved:false},
+  {id:'ALT-002',type:'warning',title:'Latency Spike di Jakarta Cluster',desc:'Latency naik dari 45ms ke 180ms selama 15 menit.',time:'13:55',resolved:false},
+  {id:'ALT-003',type:'info',title:'Deploy B-001 Sedang Berjalan',desc:'Build v2.4.2 Catalog Pro (Staging). Estimasi 18 menit.',time:'14:32',resolved:false},
+  {id:'ALT-004',type:'warning',title:'API Key Mendekati Rate Limit',desc:'Payment gateway 80% batas harian.',time:'09:15',resolved:false},
+  {id:'ALT-005',type:'resolved',title:'Memory Spike Serverless Functions',desc:'Loop tak terbatas pada payload besar. Diperbaiki.',time:'06:40',resolved:true}
+ ],
+ aiToken:{today:12847,yesterday:11203,limit:50000,cost:2.57,model:'gemini-2.0-flash'},
+ sysMetrics:{uptime:99.98,ok:141,fail:6}
+};
+function ccStateC(){
+ if(!state.alerts) state.alerts = JSON.parse(JSON.stringify(CC_SEED_C.alerts));
+ if(!state.aiToken) state.aiToken = JSON.parse(JSON.stringify(CC_SEED_C.aiToken));
+ if(!state.sysMetrics) state.sysMetrics = JSON.parse(JSON.stringify(CC_SEED_C.sysMetrics));
+}
+function ccState(){try{ccStateA();}catch(e){}try{ccStateB();}catch(e){}try{ccStateC();}catch(e){}}
+
+
+/* ================= CONTROL CENTER RENDER ================= */
+function prStatusClass(s){s=String(s||'').toLowerCase();if(s==='approved')return'approved';if(s==='changes')return'changes';if(s==='merge')return'merge';return'review';}
+function renderCCKpis(){
+ var p=state.projects||[],d=state.deployments||[],r=state.requests||[];
+ var online=p.filter(function(x){return x.status==='ONLINE';}).length;
+ var live=d.filter(function(x){return String(x.status||'').toUpperCase()==='DEPLOYED';}).length;
+ var up=99.5+((p.length+online)%6)*0.08; if(up>99.99)up=99.99;
+ var rel=d.length?('v'+(d[d.length-1].version||'2.4.1')):'v2.4.1';
+ var ai=state.aiToken||{today:12847,cost:2.57};
+ setText('kpiServices',(p.length||online)+' svc');
+ var sd=$('kpiServicesDelta');if(sd){sd.textContent=online+' online';sd.className='cc-kpi-delta '+(online>0?'up':'flat');}
+ var st=$('kpiServicesTrend');if(st){st.style.width=Math.min(100,(p.length?online/Math.max(1,p.length):0)*100)+'%';}
+ setText('kpiUptime',up.toFixed(2)+'%');
+ var ut=$('kpiUptimeTrend');if(ut){ut.style.width=up+'%';}
+ setText('kpiReleases',rel);
+ var re=$('kpiReleasesEnv');if(re){re.textContent=live+' live';}
+ var rt=$('kpiReleasesTrend');if(rt){rt.style.width=Math.min(100,20+live*25)+'%';}
+ setText('kpiTokens',(ai.today>=1000?(ai.today/1000).toFixed(1)+'K':ai.today)+' tok');
+ setText('kpiTokensDelta','$'+Number(ai.cost||0).toFixed(2)+'/hari');
+ var tt=$('kpiTokensTrend');if(tt){tt.style.width=Math.min(100,(ai.today/50000)*100)+'%';}
+ setText('lastUpdate',new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}));
+}
+
+
+/* ================= CONTROL CENTER RENDER 2 ================= */
+function renderCCPipeline(){
+ var pr=state.prReviews||[],bq=state.deployQueue||[],fr=state.pendingFR||[];
+ setText('prCount',pr.length);setText('buildCount',bq.length);setText('frCount',fr.length);
+ var pe=$('prEmpty');if(pe){pe.style.display=pr.length?'none':'block';}
+ var pl=$('prList');if(pl){pl.innerHTML=pr.map(function(x){return '<div class="pr-item"><div class="pr-info"><div class="pr-title">'+esc(x.id+' - '+x.title)+'</div><div class="pr-meta">'+esc(x.author+' - '+x.branch+' - '+x.files+' files - '+x.age)+'</div></div><span class="pr-status '+prStatusClass(x.status)+'">'+esc(x.status)+'</span></div>';}).join('');}
+ var be=$('buildEmpty');if(be){be.style.display=bq.length?'none':'block';}
+ var bqEl=$('buildQueue');if(bqEl){bqEl.innerHTML=bq.map(function(x){var c=x.status==='running'?'running':(x.status==='failed'?'failed':(x.status==='succeeded'?'succeeded':'pending'));return '<div class="build-item"><span class="build-num">'+esc(x.id)+'</span><div class="build-info"><span class="build-name">'+esc(x.project+' '+x.version)+'</span><span class="build-meta">'+esc(x.feature+' - '+x.env+' - '+x.started)+'</span><div class="build-bar"><div class="build-bar-fill" style="width:'+Math.min(100,Math.max(0,x.progress||0))+'%"></div></div></div><span class="build-status '+c+'">'+esc(x.status)+'</span></div>';}).join('');}
+ var fe=$('frEmpty');if(fe){fe.style.display=fr.length?'none':'block';}
+ var fq=$('frQueue');if(fq){fq.innerHTML=fr.map(function(x){return '<div class="fr-item"><span class="fr-id">'+esc(x.id)+'</span><div class="fr-info"><div class="fr-title">'+esc(x.title)+'</div><div class="fr-meta">'+esc(x.client+' - '+x.submitted)+'</div></div><span class="fr-priority '+String(x.priority||'medium').toLowerCase()+'">'+esc(x.priority)+'</span></div>';}).join('');}
+}
+function renderCCHealth(){
+ var ms=state.microservices||[],cl=state.clusters||[];
+ var ups=ms.filter(function(m){return m.status==='up';}).length;
+ setText('svcCount',ups+'/'+ms.length);
+ var he=$('healthEmpty');if(he){he.style.display=ms.length?'none':'block';}
+ var hm=$('healthMatrix');if(hm){hm.innerHTML=ms.map(function(m){var cls=m.status==='up'?'up':(m.status==='warn'?'warn':'down');var lab=m.status==='up'?'UP':(m.status==='warn'?'WARN':'DOWN');return '<div class="health-cell health-cell-'+cls+'"><div class="health-cell-name"><span class="hc-icon '+cls+'">'+esc(m.icon||m.name.charAt(0))+'</span><h4>'+esc(m.name)+'</h4></div><div class="health-cell-status"><span class="hc-label">'+lab+'</span><span class="hc-val '+cls+'">'+m.latency+'ms - '+m.uptime+'%</span></div></div>';}).join('');}
+ setText('clusterCount',cl.length);
+ var ce=$('clusterEmpty');if(ce){ce.style.display=cl.length?'none':'block';}
+ var clEl=$('clusterList');if(clEl){clEl.innerHTML=cl.map(function(c){var cls=c.score>=94?'ok':(c.score>=88?'warn':'bad');return '<div class="cluster-row"><span class="cr-name">'+esc(c.name)+'</span><span class="cr-score '+cls+'">'+c.score+'</span><div class="cr-bar"><div class="cr-bar-fill" style="width:'+c.score+'%"></div></div><span>'+c.nodes+' nodes</span></div>';}).join('');}
+}
+
+
+/* ================= CONTROL CENTER RENDER 3 + ACTIONS ================= */
+function renderCCAlerts(){
+ var a=state.alerts||[];var vis=a.filter(function(x){return!x.resolved;});
+ setText('alertCount',vis.length);
+ var ae=$('alertEmpty');if(ae){ae.style.display=a.length?'none':'block';}
+ var el=$('alertStream');if(el){el.innerHTML=a.map(function(x){var ic=x.type==='critical'?'!':(x.type==='warning'?'?':(x.type==='resolved'?'OK':'i'));return '<div class="alert-item '+x.type+'"><span class="alert-icon">'+ic+'</span><div class="alert-body"><div class="alert-title">'+esc(x.title)+'</div><div class="alert-desc">'+esc(x.desc)+'</div></div><span class="alert-time">'+esc(x.time)+'</span></div>';}).join('');}
+}
+function updateCCConnection(){
+ var dot=$('connDot'),lab=$('connLabel');
+ var online=navigator.onLine!==false;
+ var fb=(window.EmanAPI&&window.EmanAPI.ready);
+ var cls=fb?'online':(online?'connecting':'offline');
+ var txt=fb?'Terhubung: Firestore aktif':(online?'Online: mode lokal (Firestore belum sinkron)':'Offline: data tersimpan lokal');
+ if(dot){dot.className='conn-dot '+cls;}if(lab){lab.textContent=txt;}
+}
+function refreshHealth(){
+ ccState();
+ var ms=state.microservices||[];
+ ms.forEach(function(m){m.latency=Math.max(18,Math.round(m.latency+(Math.random()*24-12)));m.uptime=Math.min(99.99,Math.max(99.8,+(m.uptime+(Math.random()*0.04-0.02)).toFixed(2)));});
+ var cl=state.clusters||[];
+ cl.forEach(function(c){c.score=Math.min(99,Math.max(84,c.score+Math.round(Math.random()*4-2)));});
+ try{persist();}catch(e){}
+ renderControlCenter();toast('Status kesehatan diperbarui');
+}
+
+
+/* ================= CONTROL CENTER ACTIONS ================= */
+function triggerDeploy(){
+ ccState();var q=(state.deployQueue||[]).find(function(x){return x.status==='pending'||x.status==='running';});
+ if(!q){toast('Tidak ada antrean deploy','error');return;}
+ q.status='running';q.progress=Math.min(95,(q.progress||0)+18);
+ q.started=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+ logAudit('DEPLOY',q.project,q.id+' '+q.version);
+ try{persist();}catch(e){}
+ renderAll();toast('Deploy '+q.id+' dijalankan');
+}
+function rollbackLast(){
+ var d=(state.deployments||[]).slice().reverse().find(function(x){return String(x.status||'').toUpperCase()==='DEPLOYED';});
+ if(!d){toast('Belum ada deployment live','error');return;}
+ d.status='ROLLBACK';logAudit('ROLLBACK',d.project,d.version||'-');
+ try{persist();}catch(e){}
+ renderAll();toast('Rollback diminta untuk '+d.project);
+}
+function newFeatureRequest(){if(typeof openRequestModal==='function'){openRequestModal();}else{showPage('requests');}}
+function aiPlayground(){showPage('ai');}
+function downloadLogSnapshot(){
+ var snap={exportedAt:new Date().toISOString(),audit:state.audit||[],alerts:state.alerts||[],deployments:state.deployments||[]};
+ var blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+ var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='eman-log-snapshot.json';document.body.appendChild(a);a.click();
+ setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+ toast('Snapshot log diunduh');
+}
+function clearResolvedAlerts(){state.alerts=(state.alerts||[]).filter(function(x){return!x.resolved;});try{persist();}catch(e){}renderCCAlerts();toast('Alert selesai disembunyikan');}
+function renderControlCenter(){try{ccState();}catch(e){}renderCCKpis();renderCCPipeline();renderCCHealth();renderCCAlerts();updateCCConnection();}
+
+
+/* ================= CONTROL CENTER RENDER (dispatcher) ================= */
+function renderControlCenter(){try{ccState();}catch(e){}renderCCKpis();renderCCPipeline();renderCCHealth();renderCCAlerts();updateCCConnection();}
+
+
+
+
+/* ================= CONTROL CENTER RENDER (dispatcher) ================= */
+function renderControlCenter(){try{ccState();}catch(e){}renderCCKpis();renderCCPipeline();renderCCHealth();renderCCAlerts();updateCCConnection();}
+
+/* ================= CONTROL CENTER RENDER ================= */
+
+function renderControlCenter() {
+    renderCCKpis();
+    renderCCPipeline();
+    renderCCHealth();
+    renderCCAlerts();
+    updateCCConnection();
+}/* ================= AI BRAIN ================= */
+
+const AI_DONE_STATUS = ['DEPLOYED','DONE','ONLINE'];
+
+function aiAnalyze(){
+    const insights = [];
+    const rows     = [];
+
+    const clients     = state.clients     || [];
+    const projects    = state.projects    || [];
+    const requests    = state.requests    || [];
+    const tasks       = state.tasks       || [];
+    const deployments = state.deployments || [];
+
+    /* ---------- deteksi per project ---------- */
+
+    let blocked = 0;
+    let done    = 0;
+    let active  = 0;
+
+    for(const p of projects){
+        const name    = p.name || '(tanpa nama)';
+        const version = p.version || '-';
+        const status  = String(p.status || '').toUpperCase();
+
+        const projReqs  = requests.filter(r => r.project === name);
+        const projTasks = tasks.filter(t => t.project === name);
+        const projDeps  = deployments.filter(d => d.project === name);
+
+        const st = projReqs.filter(r => ['REQUESTED','APPROVED'].includes(String(r.status).toUpperCase())).length;
+        const dv = projReqs.filter(r => ['DEVELOPMENT','CODING'].includes(String(r.status).toUpperCase())).length +
+                   projTasks.filter(t => ['DEVELOPMENT','CODING'].includes(String(t.status).toUpperCase())).length;
+        const ts = projReqs.filter(r => ['TESTING','UAT'].includes(String(r.status).toUpperCase())).length +
+                   projTasks.filter(t => ['TESTING','UAT','READY'].includes(String(t.status).toUpperCase())).length;
+        const dp = projDeps.filter(d => String(d.status).toUpperCase() === 'READY').length;
+
+        let score = 100;
+        const probs = [];
+
+        if(!version || version === '-'){
+            score -= 10;
+            probs.push('belum ada nomor versi');
+        }
+        if(st > 0){
+            score -= Math.min(20, st * 7);
+            probs.push(st + ' request belum diproses');
+        }
+        if(dv > 3){
+            score -= Math.min(25, (dv - 3) * 6);
+            probs.push(dv + ' pekerjaan aktif (potensi overload)');
+        }
+        if(ts > 0){
+            score -= 8;
+            probs.push('ada pekerjaan menunggu testing/UAT');
+        }
+        if(dp > 0){
+            score -= 10;
+            probs.push(dp + ' rilis siap tapi belum dideploy');
+        }
+        if(status === 'OFFLINE'){
+            score -= 40;
+            probs.push('project berstatus OFFLINE');
+        }
+
+        score = Math.max(0, Math.min(100, score));
+
+        if(st > 0 || dv > 3 || dp > 0 || status === 'OFFLINE'){ blocked++; }
+        else if(AI_DONE_STATUS.includes(status) && dv === 0 && st === 0){ done++; }
+        else{ active++; }
+
+        let rec;
+        if(probs.length === 0){
+            rec = 'Sehat. Lanjutkan ritme kerja saat ini.';
+        }else if(dp > 0){
+            rec = 'Segera deploy rilis yang sudah READY ke production.';
+        }else if(st > 0){
+            rec = 'Review ' + st + ' request masuk — approve atau tolak agar antrean tidak menumpuk.';
+        }else if(ts > 0){
+            rec = 'Jadwalkan sesi testing/UAT untuk pekerjaan yang sudah selesai coding.';
+        }else if(dv > 3){
+            rec = 'Beban kerja tinggi (' + dv + ' tugas). Pertimbangkan urutan prioritas.';
+        }else if(!version || version === '-'){
+            rec = 'Tetapkan nomor versi awal (mis. v0.1.0) untuk memudahkan pelacakan.';
+        }else if(status === 'OFFLINE'){
+            rec = 'Project OFFLINE — periksa server/hosting secepatnya.';
+        }else{
+            rec = 'Pantau secara berkala.';
+        }
+
+        const tone  = score >= 80 ? 'ok' : score >= 55 ? 'info' : score >= 30 ? 'warn' : 'bad';
+        const label = score >= 80 ? 'SEHAT' : score >= 55 ? 'PERHATIAN' : score >= 30 ? 'RISIKO' : 'KRITIS';
+
+        rows.push({ name, client:p.client || '-', version, status:p.status || '-',
+                    score, tone, label, rec });
+    }
+    /* ---------- insight global ---------- */
+
+    if(projects.length === 0){
+        insights.push({
+            tone:'info', title:'Belum ada data project',
+            text:'Tambahkan klien dan project terlebih dahulu — AI akan menganalisis otomatis setelah data terisi.'
+        });
+    }else{
+        const totalReq = requests.filter(r => String(r.status).toUpperCase() === 'REQUESTED').length;
+        if(totalReq > 0){
+            insights.push({
+                tone:'warn', title: totalReq + ' request menunggu keputusan',
+                text:'Semakin lama menunggu, semakin besar risiko klien kehilangan kepercayaan. Proses halaman Feature Request.'
+            });
+        }
+
+        const readyDep = deployments.filter(d => String(d.status).toUpperCase() === 'READY').length;
+        if(readyDep > 0){
+            insights.push({
+                tone:'info', title: readyDep + ' rilis siap deploy',
+                text:'Rilis yang sudah READY di staging sebaiknya naik ke production dalam 1-2 hari.'
+            });
+        }
+
+        const testingWip = tasks.filter(t => ['TESTING','UAT'].includes(String(t.status).toUpperCase())).length;
+        if(testingWip > 0){
+            insights.push({
+                tone:'info', title: testingWip + ' pekerjaan dalam fase testing',
+                text:'Pastikan UAT klien dijadwalkan agar rilis tidak tertahan.'
+            });
+        }
+
+        if(state.lastBackup){
+            const age = (Date.now() - new Date(state.lastBackup).getTime()) / 86400000;
+            if(age > 7){
+                insights.push({
+                    tone:'warn', title:'Backup terakhir lebih dari 7 hari',
+                    text:'Buka Backup Center dan unduh backup terbaru, atau pastikan sinkronisasi cloud berjalan.'
+                });
+            }
+        }else{
+            insights.push({
+                tone:'warn', title:'Belum pernah backup',
+                text:'Data sudah tersinkron ke cloud, tapi unduh backup file JSON secara berkala sebagai lapisan tambahan.'
+            });
+        }
+
+        const healthy = rows.filter(r => r.score >= 80).length;
+        insights.push({
+            tone: healthy === rows.length ? 'ok' : 'info',
+            title:'Kesehatan: ' + healthy + '/' + rows.length + ' project sehat',
+            text: healthy === rows.length
+                ? 'Semua project dalam kondisi baik. Pertahankan.'
+                : 'Perhatikan project dengan skor rendah di tabel deteksi di bawah.'
+        });
+    }
+
+    /* ---------- render ---------- */
+
+    const ICON = { ok:'✓', info:'i', warn:'!', bad:'×' };
+
+    $('aiInsights').innerHTML = insights.map(i =>
+        '<div class="ai-tip ai-' + i.tone + '">' +
+        '<span class="ai-tip-icon">' + ICON[i.tone] + '</span>' +
+        '<div style="flex:1"><strong>' + esc(i.title) + '</strong><p>' + esc(i.text) + '</p></div>' +
+        '</div>'
+    ).join('');
+
+    const avg = rows.length
+        ? Math.round(rows.reduce((a,r) => a + r.score, 0) / rows.length)
+        : 0;
+
+    setText('aiHealth', rows.length ? avg + '/100' : '-');
+    setText('aiActive', String(active));
+    setText('aiBlocked', String(blocked));
+    setText('aiDone', String(done));
+
+    const tb = $('aiTable').querySelector('tbody');
+    if(tb){
+        tb.innerHTML = rows.length
+            ? rows.map(r =>
+                '<tr>' +
+                '<td><span class="ai-badge ai-b-' + r.tone + '">' + r.label + ' · ' + r.score + '</span></td>' +
+                '<td>' + esc(r.name) + '</td>' +
+                '<td>' + esc(r.client) + '</td>' +
+                '<td>' + esc(r.version) + '</td>' +
+                '<td>' + esc(r.status) + '</td>' +
+                '<td>' + esc(r.rec) + '</td>' +
+                '</tr>'
+            ).join('')
+            : '<tr><td colspan="6" class="empty">Belum ada project untuk dianalisis.</td></tr>';
+    }
+}
+
+
+/* ================= PAGE SYSTEM ================= */
+
+function showPage(page){
+    document.querySelectorAll('.page')
+        .forEach(p => p.classList.toggle('active', p.id === page));
+
+    /* Project Workspace adalah halaman detail dari Client / PT,
+       jadi menu yang tetap menyala adalah Client / PT. */
+    const navKey = (page === 'workspace') ? 'clients' : page;
+
+    document.querySelectorAll('.nav button')
+        .forEach(b => b.classList.toggle('active', b.getAttribute('data-page') === navKey));
+
+     setText('pageHeader', TITLES[page] || page);
+     setText('pageSubtitle', SUBTITLES[page] || '');
+
+     if(page === 'ai'){ aiAnalyze(); }
+
+     window.scrollTo(0,0);
+ }
+
+
+/* ================= REQUEST ================= */
+
+function openRequestModal(){
+    renderRequestForm();
+    $('requestFeature').value = '';
+    $('requestDescription').value = '';
+    $('requestPriority').value = 'NORMAL';
+    $('requestModal').classList.add('show');
+    $('requestFeature').focus();
+}
+
+function closeRequestModal(){
+    $('requestModal').classList.remove('show');
+}
+
+function nextRequestId(){
+    const max = state.requests.reduce((acc,r) => {
+        const n = parseInt(String(r.id).replace(/\D/g,''),10);
+        return isNaN(n) ? acc : Math.max(acc,n);
+    },0);
+    return 'REQ-' + String(max + 1).padStart(3,'0');
+}
+
+function saveRequest(){
+    const feature = val('requestFeature').trim();
+
+    if(!feature){
+        toast('Nama feature wajib diisi.','error');
+        $('requestFeature').focus();
+        return;
+    }
+
+    const request = {
+        id: nextRequestId(),
+        client: val('requestClient'),
+        project: val('requestProject'),
+        feature: feature,
+        priority: val('requestPriority'),
+        status:'REQUESTED',
+        description: val('requestDescription').trim(),
+        createdAt: new Date().toISOString()
+    };
+
+    state.requests.push(request);
+    save(COLL.requests, request);
+    logAudit('FEATURE_REQUEST', request.project, request.id);
+    persist();
+    closeRequestModal();
+    renderAll();
+    toast('Feature Request ' + request.id + ' berhasil dibuat');
+}
+
+function openRequestDetail(id){
+    const r = state.requests.find(x => x.id === id);
+
+    if(!r){
+        toast('Request tidak ditemukan','error');
+        return;
+    }
+
+    activeRequestId = r.id;
+
+    setText('detailTitle', 'Request #' + r.id);
+    setText('detailFeature', r.feature);
+    setText('detailClient', 'Client: ' + r.client);
+    setText('detailProject', 'Project: ' + r.project);
+    setText('detailPriority', 'Priority: ' + r.priority);
+    setText('detailStatus', 'Status: ' + r.status);
+    setText('detailDescription', r.description || 'Tidak ada detail tambahan.');
+
+    const approve = $('detailApproveBtn');
+    approve.disabled = !(r.status === 'REQUESTED');
+    approve.innerText = r.status === 'REQUESTED' ? 'Terima Request' : 'Sudah diproses';
+
+    $('detailProjectBtn').setAttribute('data-project', r.project);
+    $('detailModal').classList.add('show');
+}
+
+function closeDetail(){
+    $('detailModal').classList.remove('show');
+}
+
+function approveRequest(){
+    const r = state.requests.find(x => x.id === activeRequestId);
+
+    if(!r || r.status !== 'REQUESTED'){
+        toast('Request ini sudah diproses','error');
+        return;
+    }
+
+    r.status = 'APPROVED';
+    save(COLL.requests, r);
+    logAudit('REQUEST_APPROVED', r.project, r.id);
+    persist();
+    closeDetail();
+    renderAll();
+    toast('Request ' + r.id + ' diterima dan masuk antrean Development');
+    showPage('development');
+}
+
+
+/* ================= PROJECT ================= */
+
+/* ================= PROJECT WORKSPACE ================= */
+
+let activeProject = null;
+
+/* Status project -> warna indikator di halaman workspace */
+const PROJECT_STATUS_SYNC = {
+    ONLINE:'online',
+    DEVELOPMENT:'warn',
+    PLANNING:'mute',
+    OFFLINE:'error'
+};
+
+/* Rencana integrasi per project. Status Firebase dibaca dari
+   koneksi Firestore yang sebenarnya; lainnya masih manual. */
+const INTEGRATIONS = [
+    { name:'GitHub',     detail:'Repository project' },
+    { name:'VS Code',    detail:'Remote workspace'   },
+    { name:'Cloudflare', detail:'DNS & hosting'      },
+    { name:'Firebase',   detail:'Project cloud'      }
+];
+
+/* Cek koneksi Firebase yang sebenarnya (bukan tulisan statis). */
+function firebaseConnected(){
+    const chip = $('syncStatus');
+    return !!(window.EmanAPI && window.EmanAPI.ready &&
+              chip && chip.getAttribute('data-state') === 'online');
+}
+
+const INTEGRATION_ICON =
+    '<svg viewBox="0 0 24 24"><path d="M9.5 14.5 14.5 9.5"/>' +
+    '<path d="m11 6 1-1a4 4 0 0 1 6 6l-1 1"/>' +
+    '<path d="m13 18-1 1a4 4 0 0 1-6-6l1-1"/></svg>';
+
+function showWorkspace(name){
+    const project = state.projects.find(p => p.name === name);
+
+    if(!project){
+        toast('Project tidak ditemukan','error');
+        return;
+    }
+
+    activeProject = project.name;
+
+    showPage('workspace');
+    renderWorkspace();
+}
+
+function renderWorkspace(){
+    if(!activeProject){ return; }
+
+    const project = state.projects.find(p => p.name === activeProject);
+
+    if(!project){
+        activeProject = null;
+        return;
+    }
+
+    const client      = state.clients.find(c => c.project === project.name) || null;
+    const requests    = state.requests
+        .filter(r => r.project === project.name)
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const tasks       = state.tasks.filter(t => t.project === project.name);
+    const deployments = state.deployments.filter(d => d.project === project.name);
+    const features    = state.features.map(f => ({
+        name: f.name,
+        key:  f.key,
+        on:   !!(client && f.active && f.active[client.key])
+    }));
+
+    const activeFeatures = features.filter(f => f.on).length;
+    const inProgress     = requests.filter(r => IN_PROGRESS.includes(r.status)).length;
+    const runningTasks   = tasks.filter(t => t.status !== 'DEPLOYED').length;
+    const lastDeploy     = deployments.find(d => d.status === 'DEPLOYED') || deployments[0] || null;
+
+    /* ---------- identitas project ---------- */
+
+    setText('wsName', project.name);
+    setText('wsClient', client && client.name !== project.client
+        ? project.client + '  ·  ' + client.name
+        : project.client);
+    setText('wsPlatform', project.platform || '-');
+    setText('wsVersion', project.version || '-');
+
+    const chipEl = $('wsStatusChip');
+    if(chipEl){ chipEl.setAttribute('data-state', PROJECT_STATUS_SYNC[project.status] || 'mute'); }
+    setText('wsStatus', project.status);
+
+    setText('pageSubtitle', project.client + '  ·  ' + project.platform + '  ·  ' + project.status);
+
+    /* ---------- angka ringkas ---------- */
+
+    setText('wsRequestCount', requests.length);
+    setText('wsRequestInfo', inProgress + ' masih diproses');
+
+    setText('wsFeatureCount', activeFeatures + ' / ' + features.length);
+    setText('wsFeatureInfo', features.length ? 'Fitur aktif untuk tenant ini' : 'Belum ada fitur terdaftar');
+
+    setText('wsTaskCount', runningTasks);
+    setText('wsTaskInfo', runningTasks ? 'Task berjalan' : 'Tidak ada task berjalan');
+
+    setText('wsDeployCount', deployments.length);
+    setText('wsDeployInfo', lastDeploy ? lastDeploy.env + ' · ' + lastDeploy.version : 'Belum ada deployment');
+
+    setText('wsRequestHint', requests.length + ' request');
+
+    /* ---------- tabel ---------- */
+
+    $('wsRequestRows').innerHTML = requests.length
+        ? requests.map(r =>
+            '<tr>' +
+            '<td class="mono">' + esc(r.id) + '</td>' +
+            '<td>' + esc(r.feature) + '</td>' +
+            '<td>' + esc(r.priority) + '</td>' +
+            '<td>' + badge(r.status) + '</td>' +
+            '<td class="muted">' + esc(formatShort(r.createdAt)) + '</td>' +
+            '</tr>').join('')
+        : '<tr><td colspan="5" class="empty">Belum ada request untuk project ini.</td></tr>';
+
+    $('wsDeployRows').innerHTML = deployments.length
+        ? deployments.map(d =>
+            '<tr>' +
+            '<td class="mono">' + esc(d.requestId) + '</td>' +
+            '<td>' + esc(d.feature) + '</td>' +
+            '<td class="mono">' + esc(d.version) + '</td>' +
+            '<td>' + esc(d.env) + '</td>' +
+            '<td>' + badge(d.status) + '</td>' +
+            '</tr>').join('')
+        : '<tr><td colspan="5" class="empty">Belum ada deployment untuk project ini.</td></tr>';
+
+    /* ---------- fitur aktif ---------- */
+
+    $('wsFeatures').innerHTML = features.length
+        ? features.map(f =>
+            '<div class="ws-row ' + (f.on ? 'on' : '') + '">' +
+            '<span class="ws-dot"></span>' +
+            '<div class="ws-body">' +
+            '<strong>' + esc(f.name) + '</strong>' +
+            '<span>' + esc(f.key) + '</span>' +
+            '</div>' +
+            '<span class="status ' + (f.on ? 'status-green' : 'status-gray') + '">' +
+            (f.on ? 'Aktif' : 'Nonaktif') +
+            '</span>' +
+            '</div>').join('')
+        : '<p class="empty">Belum ada fitur terdaftar.</p>';
+
+    /* ---------- aktivitas project ---------- */
+
+    const feed = state.audit.filter(a =>
+        a.project === project.name ||
+        a.project === project.client ||
+        (client && a.project === client.name) ||
+        (client && a.project === client.short)
+    ).slice(0, 6);
+
+    $('wsFeed').innerHTML = feed.length
+        ? feed.map(a => {
+            const tone = feedTone(a.action);
+
+            return '<div class="feed-item">' +
+                '<span class="feed-icon tone-' + tone + '">' + FEED_ICON[tone] + '</span>' +
+                '<div class="feed-body">' +
+                '<strong>' + esc(a.action) + '</strong>' +
+                '<p>' + esc(a.target) + ' · ' + esc(a.actor) + '</p>' +
+                '</div>' +
+                '<span class="feed-time">' + esc(a.time) + '</span>' +
+                '</div>';
+        }).join('')
+        : '<p class="empty">Belum ada aktivitas untuk project ini.</p>';
+
+    /* ---------- integrasi ---------- */
+
+    const fbOk = firebaseConnected();
+
+    $('wsIntegrations').innerHTML = INTEGRATIONS.map(item => {
+        let status = 'belum tersambung';
+        let attrs  = '';
+
+        if(item.name === 'Firebase' && fbOk){
+            status = '<b style="color:var(--ok)">tersambung</b>';
+        }
+
+        if(item.name === 'VS Code'){
+            if(project.vscodePath){
+                status = '<b style="color:var(--ok)">tersambung</b>';
+            }else{
+                status = 'belum tersambung · klik untuk atur';
+            }
+            attrs = ' style="cursor:pointer" ' +
+                    'onclick="openInVSCode()" ' +
+                    'title="Buka folder project ini di VS Code"';
+        }
+
+        return '<div class="integration"' + attrs + '>' +
+            '<span class="stat-icon">' + INTEGRATION_ICON + '</span>' +
+            '<div>' +
+            '<strong>' + esc(item.name) + '</strong>' +
+            '<span>' + esc(item.detail) + ' · ' + status + '</span>' +
+            '</div>' +
+            '</div>';
+    }).join('');
+}
+
+function enterProject(project){
+    if(!project){ return; }
+
+    logAudit('OPEN_PROJECT', project, 'Workspace');
+    persist();
+    renderAudit();
+
+    showWorkspace(project);
+}
+
+
+/* ================= VS CODE INTEGRATION ================= */
+
+/* Buka folder project di VS Code lewat protokol vscode://.
+   Path folder disimpan per project (tersinkron ke Firestore). */
+function openInVSCode(){
+    const project = state.projects.find(p => p.name === activeProject);
+
+    if(!project){
+        toast('Pilih project dulu','error');
+        return;
+    }
+
+    let folder = project.vscodePath || '';
+
+    if(!folder){
+        folder = prompt(
+            'Lokasi folder project di komputer ini:\n' +
+            'contoh: C:\\Users\\pudo 012\\Documents\\GitHub\\NamaProject',
+            ''
+        );
+
+        if(!folder || !folder.trim()){ return; }
+        folder = folder.trim();
+
+        project.vscodePath = folder;
+        save(COLL.projects, project);
+        persist();
+        logAudit('VSCODE_LINK', project.name, folder);
+        renderWorkspace();
+    }
+
+    toast('Membuka ' + project.name + ' di VS Code...');
+
+    const url = 'vscode://file/' +
+        encodeURI(folder.replace(/\\/g, '/').replace(/^([a-zA-Z]):/, '$1:'));
+
+    const a = document.createElement('a');
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+}
+
+
+/* ================= TESTING ================= */
+
+function startTesting(){
+    const r = state.requests.find(x => x.status === 'DEVELOPMENT' || x.status === 'CODING');
+
+    if(!r){
+        toast('Tidak ada fitur yang siap diuji','error');
+        return;
+    }
+
+    r.status = 'TESTING';
+
+    const task = state.tasks.find(t => t.requestId === r.id);
+    if(task){ task.status = 'TESTING'; }
+
+    save(COLL.requests, r);
+    save(COLL.tasks, task);
+
+    logAudit('TESTING', r.project, r.id);
+    persist();
+    renderAll();
+    toast('Testing dimulai: ' + r.feature);
+}
+
+function passUAT(){
+    const r = state.requests.find(x => ['DEVELOPMENT','CODING','TESTING','UAT'].includes(x.status));
+
+    if(!r){
+        toast('Tidak ada fitur yang siap UAT','error');
+        return;
+    }
+
+    const task = state.tasks.find(t => t.requestId === r.id);
+    const project = state.projects.find(p => p.name === r.project);
+    const version = (task && task.version) || (project && project.version) || '-';
+
+    r.status = 'READY';
+    if(task){ task.status = 'READY'; }
+
+    let deploy = state.deployments.find(d => d.requestId === r.id);
+
+    if(deploy){
+        deploy.status = 'READY';
+        deploy.version = version;
+    }else{
+        deploy = {
+            requestId: r.id,
+            project: r.project,
+            version: version,
+            feature: r.feature,
+            env:'Staging',
+            status:'READY'
+        };
+        state.deployments.push(deploy);
+    }
+
+    save(COLL.requests, r);
+    save(COLL.tasks, task);
+    save(COLL.deployments, deploy);
+
+    logAudit('UAT_PASS', r.project, r.id);
+    persist();
+    renderAll();
+    toast('Fitur dinyatakan READY: ' + r.feature);
+}
+
+
+/* ================= DEPLOYMENT ================= */
+
+function deployProject(project, index){
+    if(!project){ return; }
+
+    const deploy = state.deployments[index] || state.deployments.find(d => d.project === project);
+
+    if(!deploy || deploy.status === 'DEPLOYED'){
+        toast('Tidak ada deployment yang menunggu','error');
+        return;
+    }
+
+    toast('Deployment ' + project + ' dimulai');
+
+    setTimeout(function(){
+        deploy.status = 'DEPLOYED';
+
+        const projectData = state.projects.find(p => p.name === project);
+
+        if(projectData){
+            projectData.status = 'ONLINE';
+            if(deploy.version && deploy.version !== '-'){ projectData.version = deploy.version; }
+        }
+
+        const task = state.tasks.find(t => t.requestId === deploy.requestId);
+        if(task){ task.status = 'DEPLOYED'; }
+
+        const req = state.requests.find(r => r.id === deploy.requestId);
+        if(req){ req.status = 'DEPLOYED'; }
+
+        save(COLL.deployments, deploy);
+        save(COLL.projects, projectData);
+        save(COLL.tasks, task);
+        save(COLL.requests, req);
+
+        logAudit('DEPLOY', project, deploy.version);
+        persist();
+        renderAll();
+        toast('Deployment ' + project + ' berhasil');
+    },1000);
+}
+
+
+/* ================= FEATURE MATRIX ================= */
+
+function toggleFeature(el){
+    if(!el){ return; }
+
+    const key = el.getAttribute('data-feature');
+    const tenant = el.getAttribute('data-tenant');
+    const feature = state.features.find(f => f.key === key);
+
+    const on = !el.classList.contains('on');
+
+    el.classList.toggle('on', on);
+    el.setAttribute('aria-checked', on ? 'true' : 'false');
+
+    if(feature){
+        if(!feature.active){ feature.active = {}; }
+        feature.active[tenant] = on;
+    }
+
+    const tenantName = clientName(tenant);
+    const featureName = feature ? feature.name : key;
+
+    save(COLL.features, feature);
+
+    logAudit(on ? 'FEATURE_ON' : 'FEATURE_OFF', tenantName, featureName);
+    persist();
+    renderAudit();
+
+    toast(on
+        ? 'Feature ' + featureName + ' diaktifkan untuk ' + tenantName
+        : 'Feature ' + featureName + ' dinonaktifkan untuk ' + tenantName);
+}
+
+
+/* ================= BACKUP & SYNC ================= */
+
+/* Unduh seluruh state aplikasi sebagai file JSON. */
+function downloadBackup(){
+    const stamp = new Date().toISOString()
+        .replace(/[:T]/g,'-')
+        .slice(0,19);
+
+    const blob = new Blob(
+        [JSON.stringify(state, null, 2)],
+        { type:'application/json' }
+    );
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'eman-backup-' + stamp + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+}
+
+function backupNow(){
+    toast('Backup dimulai...');
+
+    setTimeout(function(){
+        state.lastBackup = new Date().toISOString();
+
+        save(COLL.meta, { lastBackup: state.lastBackup });
+
+        logAudit('BACKUP','ALL','Database');
+        persist();
+        renderBackup();
+        renderAudit();
+        downloadBackup();
+        toast('Backup selesai & file terunduh');
+    },1000);
+}
+
+/* ---------- Pulihkan dari file backup ---------- */
+
+function restoreBackupClick(){
+    const input = $('restoreFile');
+    if(input){ input.value = ''; input.click(); }
+}
+
+/* Kosongkan semua data (lokal & cloud), mulai dari awal. */
+function resetAllData(){
+    if(!confirm('Hapus SEMUA data (lokal & cloud) dan mulai dari kosong?\nTindakan ini tidak bisa dibatalkan.')){
+        return;
+    }
+    if(!confirm('Yakin 100%? Sebaiknya unduh backup dulu lewat tombol "Backup & Unduh".')){
+        return;
+    }
+
+    try{ localStorage.removeItem('eman_state_v2'); }catch(err){}
+    try{ localStorage.removeItem('eman_state_v3'); }catch(err){}
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(err){}
+
+    const api = window.EmanAPI;
+
+    const finish = function(){
+        toast('Semua data dihapus. Memuat ulang...');
+        setTimeout(function(){ location.reload(); }, 800);
+    };
+
+    if(api && api.ready && api.wipeAll){
+        api.wipeAll().then(finish).catch(finish);
+    }else{
+        finish();
+    }
+}
+
+/* Salin seluruh data lokal ke cloud Firestore (deterministik). */
+function pushAllToCloud(){
+    const api = window.EmanAPI;
+
+    if(!api || !api.ready || !api.pushAll){
+        toast('Belum terhubung ke cloud','error');
+        return;
+    }
+
+    toast('Menyalin data ke cloud...');
+
+    api.pushAll().then(function(n){
+        if(n < 0){
+            toast('Gagal menyalin ke cloud','error');
+            return;
+        }
+        logAudit('BACKUP','ALL','Cloud sync');
+        persist();
+        renderAudit();
+        toast(n + ' data project tersalin ke cloud');
+    }).catch(function(){
+        toast('Gagal menyalin ke cloud','error');
+    });
+}
+
+function restoreBackup(event){
+    const file = event && event.target && event.target.files
+        ? event.target.files[0]
+        : null;
+
+    if(!file){ return; }
+
+    const reader = new FileReader();
+
+    reader.onload = function(){
+        let data;
+
+        try{
+            data = JSON.parse(String(reader.result));
+        }catch(err){
+            toast('File bukan backup yang valid','error');
+            return;
+        }
+
+        if(!data || !Array.isArray(data.projects) || !Array.isArray(data.requests)){
+            toast('Struktur file backup tidak dikenal','error');
+            return;
+        }
+
+        if(!confirm('Pulihkan data dari file ini? Data saat ini akan ditimpa.')){
+            return;
+        }
+
+        state = data;
+        persist();
+        renderAll();
+        logAudit('RESTORE','ALL','Database');
+        toast('Data berhasil dipulihkan dari backup');
+    };
+
+    reader.readAsText(file);
+}
+
+function syncNow(){
+    renderAll();
+
+    const api = window.EmanAPI;
+
+    if(!api || !api.ready){
+        toast('Sinkronisasi lokal (Firestore belum terhubung)');
+        return;
+    }
+
+    toast('Menarik data dari Firestore...');
+
+    api.pull()
+        .then(function(){
+            toast('Data terbaru dari Firestore sudah dimuat');
+        })
+        .catch(function(){
+            toast('Gagal sinkronisasi Firestore','error');
+        });
+}
+
+
+/* ================= SEARCH ================= */
+
+function filterTable(input,tableId){
+    const value = input.value.toLowerCase();
+    const rows = document.getElementById(tableId).querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(value) ? '' : 'none';
+    });
+}
+
+
+/* ================= NOTIFICATION ================= */
+
+function toast(message,type){
+    const wrap = $('toastWrap');
+    const el = document.createElement('div');
+
+    el.className = 'toast' + (type === 'error' ? ' toast-error' : '');
+    el.textContent = message;
+    wrap.appendChild(el);
+
+    requestAnimationFrame(function(){ el.classList.add('show'); });
+
+    setTimeout(function(){
+        el.classList.remove('show');
+        setTimeout(function(){ el.remove(); },200);
+    },2600);
+}
+
+function notify(message){
+    toast(message);
+}
+
+
+/* ================= INIT ================= */
+
+document.querySelectorAll('.modal').forEach(function(modal){
+    modal.addEventListener('click', function(event){
+        if(event.target === modal){
+            modal.classList.remove('show');
+        }
+    });
+});
+
+document.addEventListener('keydown', function(event){
+    if(event.key === 'Escape'){
+        document.querySelectorAll('.modal.show')
+            .forEach(m => m.classList.remove('show'));
+    }
+});
+
+$('matrixRows').addEventListener('keydown', function(event){
+    if((event.key === 'Enter' || event.key === ' ') && event.target.classList.contains('toggle')){
+        event.preventDefault();
+        toggleFeature(event.target);
+    }
+});
+
+ applyTheme(readTheme());
+ updateClock();
+ setInterval(updateClock, 15000);
+
+ renderAll();
+
+ </script>
+
+
+ <script type="module">
+ /* ===========================================================
+    JEMBATAN FIRESTORE
+    Menyambungkan dashboard ke backend Firestore.
+
+    Sengaja dipisah dari skrip utama supaya:
+      1. dashboard tetap bisa dibuka & dipakai walau SDK atau
+         backend tidak tersedia (otomatis jatuh ke mode lokal),
+      2. bagian backend bisa dimatikan tanpa menyentuh logika
+         aplikasi di skrip utama.
+
+    Konfigurasi ada di firebase-config.js.
+    =========================================================== */
+
+ const CFG  = window.EMAN_FIREBASE || {};
+ const COLL = window.EMAN_COLLECTIONS || {
+     clients:'clients', projects:'projects', requests:'requests', tasks:'tasks',
+     deployments:'deployments', features:'features', audit:'audit', meta:'meta'
+ };
+
+ const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+
+ const chip     = document.getElementById('syncStatus');
+ const chipText = document.getElementById('syncStatusText');
+
+ function setSync(state, text, title){
+     if(chip){
+         chip.setAttribute('data-state', state);
+         chip.title = title || text;
+     }
+     if(chipText){ chipText.textContent = text; }
+
+     /* Segarkan kartu integrasi saat status koneksi berubah */
+     if(typeof window.renderAll === 'function'){
+         setTimeout(function(){ try{ window.renderAll(); }catch(e){} }, 50);
+     }
+ }
+
+ function say(message, type){
+     if(typeof window.toast === 'function'){ window.toast(message, type); }
+ }
+
+ async function main(){
+     if(!CFG.projectId){
+         setSync('offline','Mode lokal','Tidak ada konfigurasi Firebase, data disimpan di browser');
+         return;
+     }
+
+     setSync('connecting','Menghubungkan');
+
+     /* ---------- 1. Muat SDK Firebase ---------- */
+
+     let appMod;
+     let fsMod;
+     let authMod;
+
+     try{
+         const mods = await Promise.all([
+             import(SDK + 'firebase-app.js'),
+             import(SDK + 'firebase-firestore.js'),
+             import(SDK + 'firebase-auth.js')
+         ]);
+         appMod = mods[0];
+         fsMod  = mods[1];
+         authMod = mods[2];
+     }catch(err){
+         console.warn('SDK Firebase tidak bisa dimuat, dashboard jalan mode lokal.', err);
+         setSync('offline','Mode lokal','Tanpa koneksi ke SDK Firebase, data disimpan di browser');
+         return;
+     }
+
+     /* ---------- 2. Sambungkan ke Firestore ---------- */
+
+     const app = appMod.initializeApp({
+         projectId: CFG.projectId,
+         apiKey: CFG.apiKey,
+         authDomain: CFG.authDomain,
+         appId: CFG.appId
+     });
+
+     /* ---------- 2b. Login anonim (syarat rules keamanan) ---------- */
+
+     try{
+         const auth = authMod.getAuth(app);
+         await authMod.signInAnonymously(auth);
+     }catch(err){
+         console.warn('Login anonim gagal:', err);
+         setSync('error','Butuh login',
+             'Aktifkan Anonymous sign-in di Firebase Authentication. Detail: ' + (err.code || err.message));
+         say('Gagal login ke cloud: ' + (err.code || err.message), 'error');
+         return;
+     }
+
+     const db = fsMod.initializeFirestore(app, { experimentalForceLongPolling:true });
+
+     if(CFG.useEmulator){
+         fsMod.connectFirestoreEmulator(db, CFG.emulatorHost, CFG.firestorePort);
+     }
+
+     const label = CFG.useEmulator ? 'Emulator' : 'Firestore';
+     const rows  = (snap) => snap.docs.map((d) => d.data());
+     const byText = (field) => (a, b) => String(a[field] || '').localeCompare(String(b[field] || ''));
+
+     /* ---------- 3. Baca seluruh koleksi jadi satu state ---------- */
+
+     async function pull(){
+         const [clients, projects, requests, tasks, deployments, features, audit, meta] = await Promise.all([
+             fsMod.getDocs(fsMod.collection(db, COLL.clients)),
+             fsMod.getDocs(fsMod.collection(db, COLL.projects)),
+             fsMod.getDocs(fsMod.collection(db, COLL.requests)),
+             fsMod.getDocs(fsMod.collection(db, COLL.tasks)),
+             fsMod.getDocs(fsMod.collection(db, COLL.deployments)),
+             fsMod.getDocs(fsMod.collection(db, COLL.features)),
+             fsMod.getDocs(fsMod.query(fsMod.collection(db, COLL.audit), fsMod.orderBy('ts','desc'), fsMod.limit(50))),
+             fsMod.getDoc(fsMod.doc(db, COLL.meta, 'app'))
+         ]);
+
+         return {
+             clients:     rows(clients).sort(byText('name')),
+             projects:    rows(projects).sort(byText('name')),
+             /* createdAt naik -> request terbaru ada di urutan terakhir,
+                sama seperti perilaku asli dashboard */
+             requests:    rows(requests).sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || ''))),
+             tasks:       rows(tasks).sort(byText('feature')),
+             deployments: rows(deployments).sort(byText('project')),
+             features:    rows(features).sort(byText('name')),
+             audit:       rows(audit),
+             lastBackup:  meta.exists() ? (meta.data().lastBackup || null) : null,
+             isEmpty:     clients.empty && projects.empty && requests.empty
+         };
+     }
+
+     /* ---------- 3b. Salin data lokal ke cloud ---------- */
+
+     /* id deterministik supaya tidak menduplikasi dokumen
+        saat pushAll dijalankan berulang. */
+     function slug(s){
+         return String(s || 'x').toLowerCase()
+             .replace(/[^a-z0-9]+/g, '-')
+             .replace(/^-+|-+$/g, '') || 'x';
+     }
+
+     async function pushAll(){
+         const st = (typeof window.getEmanState === 'function')
+             ? window.getEmanState()
+             : null;
+
+         if(!st){ return 0; }
+
+         let count = 0;
+
+         async function put(collName, id, data){
+             await fsMod.setDoc(fsMod.doc(db, collName, id), data, { merge:true });
+             count++;
+         }
+
+         try{
+             for(const c of (st.clients || [])){
+                 await put(COLL.clients, slug(c.key || c.name), c);
+             }
+             for(const p of (st.projects || [])){
+                 await put(COLL.projects, slug(p.name), p);
+             }
+             for(const r of (st.requests || [])){
+                 await put(COLL.requests, slug(r.id || (r.feature + '-' + Date.now())), r);
+             }
+             let i = 0;
+             for(const t of (st.tasks || [])){
+                 await put(COLL.tasks, slug((t.requestId || 'task') + '-' + (t.feature || i)), t);
+                 i++;
+             }
+             let j = 0;
+             for(const d of (st.deployments || [])){
+                 await put(COLL.deployments, slug((d.project || 'dep') + '-' + (d.version || j)), d);
+                 j++;
+             }
+             for(const f of (st.features || [])){
+                 await put(COLL.features, slug(f.key || f.name), f);
+             }
+             if(st.lastBackup){
+                 await put(COLL.meta, 'app', { lastBackup: st.lastBackup });
+             }
+         }catch(err){
+             console.warn('pushAll gagal:', err);
+             return -1;
+         }
+
+         return count;
+     }
+
+     /* ---------- 3c. Hapus seluruh data cloud ---------- */
+
+     async function wipeAll(){
+         let n = 0;
+         try{
+             for(const name of Object.values(COLL)){
+                 const snap = await fsMod.getDocs(fsMod.collection(db, name));
+                 for(const d of snap.docs){
+                     await fsMod.deleteDoc(d.ref);
+                     n++;
+                 }
+             }
+         }catch(err){
+             console.warn('wipeAll gagal:', err);
+             return -1;
+         }
+         return n;
+     }
+
+     /* ---------- 4. API yang dipakai skrip utama ---------- */
+
+     const api = {
+         ready: true,
+         pushAll: function(){ return pushAll(); },
+         wipeAll: function(){ return wipeAll(); },
+
+         async write(collectionName, id, data){
+             try{
+                 if(id === null || id === undefined){
+                     await fsMod.addDoc(fsMod.collection(db, collectionName), Object.assign({}, data, {
+                         ts: fsMod.serverTimestamp(),
+                         createdAt: data.createdAt || new Date().toISOString()
+                     }));
+                 }else{
+                     await fsMod.setDoc(fsMod.doc(db, collectionName, id), data, { merge:true });
+                 }
+
+                 setSync('online', label, 'Terhubung ke Firestore (' + (CFG.useEmulator ? 'emulator lokal' : 'cloud') + ') · terakhir menyimpan ' + new Date().toLocaleTimeString('id-ID'));
+                 return true;
+
+             }catch(err){
+                 console.warn('Firestore write gagal:', collectionName, id, err);
+                 setSync('error','Gagal simpan', 'Penulisan ke Firestore gagal: ' + (err.code || err.message));
+                 return false;
+             }
+         },
+
+         pull: function(){ return refresh(); }
+     };
+
+     window.EmanAPI = api;
+
+     /* ---------- 5. Muat data awal ---------- */
+
+     let remote;
+
+     try{
+         remote = await pull();
+     }catch(err){
+         console.warn('Firestore read gagal:', err);
+         setSync('error','Gagal baca','Tidak bisa membaca Firestore: ' + (err.code || err.message));
+         return;
+     }
+
+     if(remote.isEmpty){
+         /* Cloud masih kosong -> salin data lokal ke cloud
+            supaya data project aman & ikut ke semua perangkat. */
+         setSync('warn','Menyalin','Menyalin data lokal ke cloud...');
+
+         const pushed = await pushAll();
+
+         if(pushed > 0){
+             remote = await pull();
+             if(!remote.isEmpty){
+                 window.applyRemoteState(remote);
+             }
+             setSync('online', label, 'Data lokal tersalin ke cloud (' + pushed + ' data)');
+             say(pushed + ' data project tersalin ke cloud — data aman');
+         }else{
+             setSync('warn','Kosong','Belum ada data untuk disinkronkan');
+         }
+     }else{
+         window.applyRemoteState(remote);
+         setSync('online', label, 'Terhubung ke Firestore (' + (CFG.useEmulator ? 'emulator lokal' : 'cloud') + ')');
+     }
+
+     /* ---------- 6. Ikuti perubahan dari tab / perangkat lain ---------- */
+
+     let timer   = null;
+     let pending = false;
+
+     async function refresh(){
+         /* Jangan gambar ulang saat form sedang terbuka */
+         if(document.querySelector('.modal.show')){
+             pending = true;
+             return;
+         }
+
+         try{
+             const next = await pull();
+             if(next.isEmpty){ return; }
+
+             window.applyRemoteState(next);
+             setSync('online', label, 'Terhubung ke Firestore (' + (CFG.useEmulator ? 'emulator lokal' : 'cloud') + ')');
+         }catch(err){
+             console.warn('Firestore refresh gagal:', err);
+             setSync('error','Gagal segarkan','Gagal memuat ulang dari Firestore: ' + (err.code || err.message));
+         }
+     }
+
+     function schedule(){
+         if(pending && !document.querySelector('.modal.show')){ pending = false; }
+         clearTimeout(timer);
+         timer = setTimeout(refresh, 400);
+     }
+
+     for(const name of Object.values(COLL)){
+         let first = true;
+
+         fsMod.onSnapshot(
+             fsMod.collection(db, name),
+             function(){
+                 /* emisi pertama = kondisi awal, sudah ditangani pull() di atas */
+                 if(first){ first = false; return; }
+                 schedule();
+             },
+             function(err){
+                 console.warn('Listener ' + name + ' bermasalah:', err);
+             }
+         );
+     }
+ }
+
+  main();
+
+  </script>
+
+ <script>
+ /* Registrasi Service Worker (PWA).
+    Hanya aktif saat dibuka lewat http/https (mis. server.js atau
+    hosting) — saat dibuka langsung sebagai file:// dilewati. */
+ if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
+     window.addEventListener('load', function(){
+         navigator.serviceWorker.register('./sw.js').catch(function(err){
+             console.warn('PWA: service worker gagal didaftarkan:', err);
+         });
+     });
+ }
+ </script>
+
+</body>
+</html>
