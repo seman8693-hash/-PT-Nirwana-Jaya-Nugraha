@@ -1,0 +1,8 @@
+{
+  "name": "PT. Nirwana Jaya Nugraha - Sistem Operasional Kios & ERP",
+  "description": "Sistem Terpadu PT Nirwana Jaya Nugraha: Dashboard dengan Recharts & Smart Auto-Restock, Kasir Kios (POS), SPH, SPK, Penginputan Barang, Nota Pembelian, Resi Faktur DO, dan Keuangan Arus Kas.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
