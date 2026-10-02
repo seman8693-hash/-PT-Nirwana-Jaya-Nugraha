@@ -201,12 +201,22 @@ export const App: React.FC = () => {
               onPrintDo={order => {
                 setPrintData({ type: 'do', data: order });
               }}
+              onPrintInvoice={inv => {
+                setPrintData({ type: 'invoice', data: inv });
+              }}
+              onNavigate={tab => setCurrentTab(tab)}
               onNotify={showToast}
             />
           )}
 
           {currentTab === 'keuangan' && (
-            <FinanceModule onNotify={showToast} />
+            <FinanceModule
+              onNotify={showToast}
+              onPrintInvoice={inv => {
+                setPrintData({ type: 'invoice', data: inv });
+              }}
+              onNavigate={tab => setCurrentTab(tab)}
+            />
           )}
 
           {currentTab === 'laporan' && (
@@ -530,20 +540,38 @@ export const App: React.FC = () => {
                           </div>
                         )}
                         {printData.data.ppnAmount ? (
-                          <div className="flex justify-between">
-                            <span>PPN 11%:</span>
-                            <span className="font-mono font-bold">{formatRupiah(printData.data.ppnAmount)}</span>
+                          <div className="flex justify-between text-emerald-800">
+                            <span>+ PPN ({printData.data.ppnRate || 11}%):</span>
+                            <span className="font-mono font-bold">+{formatRupiah(printData.data.ppnAmount)}</span>
                           </div>
                         ) : printData.data.taxPpn ? (
-                          <div className="flex justify-between">
-                            <span>PPN 11%:</span>
-                            <span className="font-mono font-bold">{formatRupiah(printData.data.taxPpn)}</span>
+                          <div className="flex justify-between text-emerald-800">
+                            <span>+ PPN ({printData.data.ppnRate !== undefined ? printData.data.ppnRate : 11}%):</span>
+                            <span className="font-mono font-bold">+{formatRupiah(printData.data.taxPpn)}</span>
                           </div>
                         ) : null}
+                        {printData.data.taxPph > 0 && (
+                          <div className="flex justify-between text-amber-800">
+                            <span>- PPh ({printData.data.pphType || `${printData.data.pphRate}%`}):</span>
+                            <span className="font-mono font-bold">-{formatRupiah(printData.data.taxPph)}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-sm font-black pt-1.5 border-t border-slate-300">
                           <span>Total Tagihan:</span>
                           <span className="font-mono text-slate-900">{formatRupiah(printData.data.totalAmount)}</span>
                         </div>
+                        {printData.data.paidAmount > 0 && (
+                          <div className="flex justify-between text-emerald-700">
+                            <span>Telah Dibayar:</span>
+                            <span className="font-mono font-bold">-{formatRupiah(printData.data.paidAmount)}</span>
+                          </div>
+                        )}
+                        {printData.data.paidAmount > 0 && (
+                          <div className="flex justify-between text-xs font-bold text-rose-600 border-t border-dashed pt-1">
+                            <span>Sisa Belum Dibayar:</span>
+                            <span className="font-mono font-bold">{formatRupiah(Math.max(0, printData.data.totalAmount - printData.data.paidAmount))}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

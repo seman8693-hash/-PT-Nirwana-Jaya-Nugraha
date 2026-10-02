@@ -17,6 +17,7 @@ import {
 import { store } from '../store';
 import { PosProduct, StockMovement, StockOpnameRecord } from '../types';
 import { formatRupiah, formatNumber } from '../utils/format';
+import { ProductImage } from './ProductImage';
 
 interface InventoryModuleProps {
   onOpenRestockModal: (product: PosProduct, suggestedQty?: number) => void;
@@ -284,8 +285,18 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                   return (
                     <tr key={p.id} className="hover:bg-slate-50/80 transition">
                       <td className="py-3 px-3">
-                        <div className="font-bold text-slate-900">{p.name}</div>
-                        <div className="text-[10px] font-mono text-slate-400">{p.sku} • {p.category}</div>
+                        <div className="flex items-center gap-2.5">
+                          <ProductImage
+                            src={p.imageUrl}
+                            alt={p.name}
+                            category={p.category}
+                            size="sm"
+                          />
+                          <div>
+                            <div className="font-bold text-slate-900">{p.name}</div>
+                            <div className="text-[10px] font-mono text-slate-400">{p.sku} • {p.category}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="py-3 px-3 text-center font-mono">
                         <span className={`text-sm font-black ${isLow ? 'text-rose-600' : 'text-slate-900'}`}>
@@ -342,9 +353,17 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
             {smartRestockItems.map(p => (
               <div key={p.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 space-y-3">
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="text-[10px] font-mono text-slate-400">{p.sku}</span>
-                    <h4 className="text-xs font-bold text-slate-900 leading-snug">{p.name}</h4>
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <ProductImage
+                      src={p.imageUrl}
+                      alt={p.name}
+                      category={p.category}
+                      size="sm"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-mono text-slate-400">{p.sku}</span>
+                      <h4 className="text-xs font-bold text-slate-900 leading-snug truncate" title={p.name}>{p.name}</h4>
+                    </div>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 uppercase ${
                     p.urgency === 'critical' ? 'bg-rose-500 text-white animate-pulse' : 'bg-amber-500 text-slate-950'
@@ -426,6 +445,28 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
               </select>
             </div>
 
+            {/* Selected Product Preview Card */}
+            {stockInOutForm.productId && (() => {
+              const selectedP = products.find(p => p.id === stockInOutForm.productId);
+              if (!selectedP) return null;
+              return (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
+                  <ProductImage
+                    src={selectedP.imageUrl}
+                    alt={selectedP.name}
+                    category={selectedP.category}
+                    size="sm"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-slate-900 truncate">{selectedP.name}</div>
+                    <div className="text-[10px] text-slate-500 font-mono">
+                      SKU: {selectedP.sku} • Stok: <strong className="text-slate-800">{selectedP.stock} {selectedP.unit}</strong> • Rak: {selectedP.rackLocation || 'Gudang Utama'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Kuantitas Unit *</label>
@@ -506,6 +547,28 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                 ))}
               </select>
             </div>
+
+            {/* Selected Product Preview Card */}
+            {transferForm.productId && (() => {
+              const selectedP = products.find(p => p.id === transferForm.productId);
+              if (!selectedP) return null;
+              return (
+                <div className="p-3 bg-amber-50/60 border border-amber-200 rounded-xl flex items-center gap-3">
+                  <ProductImage
+                    src={selectedP.imageUrl}
+                    alt={selectedP.name}
+                    category={selectedP.category}
+                    size="sm"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-slate-900 truncate">{selectedP.name}</div>
+                    <div className="text-[10px] text-slate-600 font-mono">
+                      Stok Fisik Tersedia: <strong className="text-emerald-700">{selectedP.stock} {selectedP.unit}</strong> • Rak: {selectedP.rackLocation || 'Gudang'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div>
               <label className="font-bold text-slate-700 block mb-1">Jumlah Unit Ditransfer *</label>
@@ -627,8 +690,23 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                       {new Date(m.date).toLocaleString('id-ID')}
                     </td>
                     <td className="py-2.5 px-3">
-                      <div className="font-bold text-slate-900">{m.productName}</div>
-                      <div className="text-[10px] font-mono text-slate-400">{m.sku}</div>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const prod = products.find(p => p.id === m.productId || p.sku === m.sku);
+                          return (
+                            <ProductImage
+                              src={prod?.imageUrl}
+                              alt={m.productName}
+                              category={prod?.category}
+                              size="xs"
+                            />
+                          );
+                        })()}
+                        <div>
+                          <div className="font-bold text-slate-900">{m.productName}</div>
+                          <div className="text-[10px] font-mono text-slate-400">{m.sku}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-2.5 px-3">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
@@ -713,8 +791,18 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                       return (
                         <tr key={p.id}>
                           <td className="py-2.5 px-3">
-                            <div className="font-bold text-slate-900">{p.name}</div>
-                            <div className="text-[10px] font-mono text-slate-400">{p.sku}</div>
+                            <div className="flex items-center gap-2">
+                              <ProductImage
+                                src={p.imageUrl}
+                                alt={p.name}
+                                category={p.category}
+                                size="xs"
+                              />
+                              <div>
+                                <div className="font-bold text-slate-900">{p.name}</div>
+                                <div className="text-[10px] font-mono text-slate-400">{p.sku}</div>
+                              </div>
+                            </div>
                           </td>
                           <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-700">
                             {p.stock} {p.unit}

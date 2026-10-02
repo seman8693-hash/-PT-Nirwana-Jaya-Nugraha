@@ -21,6 +21,7 @@ import {
 import { store } from '../store';
 import { PosProduct, PosCartItem, PosTransaction } from '../types';
 import { formatRupiah, formatNumber } from '../utils/format';
+import { ProductImage } from './ProductImage';
 
 interface PosModuleProps {
   onOpenQrisModal: (total: number, onConfirm: () => void) => void;

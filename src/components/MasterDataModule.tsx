@@ -13,11 +13,16 @@ import {
   Barcode,
   CheckCircle2,
   X,
-  AlertCircle
+  AlertCircle,
+  LayoutGrid,
+  List,
+  Image as ImageIcon
 } from 'lucide-react';
 import { store } from '../store';
 import { PosProduct, Customer, Supplier, UnitMaster } from '../types';
 import { formatRupiah, formatNumber } from '../utils/format';
+import { ProductImage } from './ProductImage';
+import { ProductImageUploader } from './ProductImageUploader';
 
 interface MasterDataModuleProps {
   onNotify?: (msg: string, type?: 'success' | 'error') => void;
@@ -25,6 +30,7 @@ interface MasterDataModuleProps {
 
 export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) => {
   const [activeTab, setActiveTab] = useState<'barang' | 'customer' | 'supplier' | 'satuan' | 'harga'>('barang');
+  const [productViewMode, setProductViewMode] = useState<'table' | 'grid'>('table');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals state
@@ -42,6 +48,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
     category: 'Kabel Power',
     brand: '',
     unit: 'Meter',
+    imageUrl: '',
     stock: 0,
     minStock: 10,
     hppPrice: 0,
@@ -115,6 +122,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
       category: 'Kabel Power',
       brand: 'Supreme Cable',
       unit: 'Meter',
+      imageUrl: '',
       stock: 10,
       minStock: 10,
       hppPrice: 50000,
@@ -138,6 +146,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
       category: p.category,
       brand: p.brand || '',
       unit: p.unit,
+      imageUrl: p.imageUrl || '',
       stock: p.stock,
       minStock: p.minStock,
       hppPrice: p.hppPrice,
@@ -314,87 +323,207 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
                 className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20"
               />
             </div>
-            <div className="text-xs text-slate-500 font-semibold self-end sm:self-auto">
-              Total {filteredProducts.length} Produk Terdaftar
+            
+            <div className="flex items-center gap-3 self-end sm:self-auto">
+              <div className="text-xs text-slate-500 font-semibold hidden md:block">
+                Total <span className="font-bold text-slate-900">{filteredProducts.length}</span> Produk Terdaftar
+              </div>
+
+              {/* View Toggle */}
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setProductViewMode('table')}
+                  className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition ${
+                    productViewMode === 'table'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                  title="Tampilan Tabel Lengkap"
+                >
+                  <List className="w-4 h-4" />
+                  <span className="hidden sm:inline">Tabel</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProductViewMode('grid')}
+                  className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition ${
+                    productViewMode === 'grid'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                  title="Tampilan Galeri Visual Foto"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  <span className="hidden sm:inline">Galeri Foto</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-y border-slate-200">
-                <tr>
-                  <th className="py-3 px-3">SKU & Barcode</th>
-                  <th className="py-3 px-3">Nama Barang & Brand</th>
-                  <th className="py-3 px-3">Kategori</th>
-                  <th className="py-3 px-3 text-center">Stok / Satuan</th>
-                  <th className="py-3 px-3 text-right">Harga HPP</th>
-                  <th className="py-3 px-3 text-right">Harga Jual Retail</th>
-                  <th className="py-3 px-3">Lokasi Rak</th>
-                  <th className="py-3 px-3 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredProducts.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3 px-3 font-mono font-bold text-slate-900">
-                      <div>{p.sku}</div>
-                      {p.barcode && (
-                        <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1 mt-0.5">
-                          <Barcode className="w-3 h-3" />
-                          <span>{p.barcode}</span>
+          {/* VIEW 1: TABLE */}
+          {productViewMode === 'table' ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-y border-slate-200">
+                  <tr>
+                    <th className="py-3 px-3 text-center w-14">Foto</th>
+                    <th className="py-3 px-3">SKU & Barcode</th>
+                    <th className="py-3 px-3">Nama Barang & Brand</th>
+                    <th className="py-3 px-3">Kategori</th>
+                    <th className="py-3 px-3 text-center">Stok / Satuan</th>
+                    <th className="py-3 px-3 text-right">Harga HPP</th>
+                    <th className="py-3 px-3 text-right">Harga Jual Retail</th>
+                    <th className="py-3 px-3">Lokasi Rak</th>
+                    <th className="py-3 px-3 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredProducts.map(p => (
+                    <tr key={p.id} className="hover:bg-slate-50/80 transition">
+                      <td className="py-3 px-3 text-center">
+                        <ProductImage
+                          src={p.imageUrl}
+                          alt={p.name}
+                          category={p.category}
+                          size="sm"
+                          className="mx-auto shadow-xs"
+                        />
+                      </td>
+                      <td className="py-3 px-3 font-mono font-bold text-slate-900">
+                        <div>{p.sku}</div>
+                        {p.barcode && (
+                          <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1 mt-0.5">
+                            <Barcode className="w-3 h-3" />
+                            <span>{p.barcode}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="font-bold text-slate-900">{p.name}</div>
+                        <div className="text-[11px] text-slate-500">{p.brand || '-'} {p.specification ? `• ${p.specification}` : ''}</div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold">
+                          {p.category}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span className={`font-mono font-bold ${p.stock <= p.minStock ? 'text-rose-600' : 'text-slate-900'}`}>
+                          {p.stock}
+                        </span>{' '}
+                        <span className="text-slate-500">{p.unit}</span>
+                        {p.stock <= p.minStock && (
+                          <div className="text-[9px] text-rose-500 font-bold uppercase mt-0.5">Kritis (Min: {p.minStock})</div>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right font-mono text-slate-600">
+                        {formatRupiah(p.hppPrice)}
+                      </td>
+                      <td className="py-3 px-3 text-right font-mono font-bold text-emerald-700">
+                        {formatRupiah(p.price)}
+                      </td>
+                      <td className="py-3 px-3 text-slate-600">
+                        {p.rackLocation || '-'}
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => handleEditProduct(p)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            title="Edit Barang"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(p.id, p.name)}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            title="Hapus Barang"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                      )}
-                    </td>
-                    <td className="py-3 px-3">
-                      <div className="font-bold text-slate-900">{p.name}</div>
-                      <div className="text-[11px] text-slate-500">{p.brand || '-'} {p.specification ? `• ${p.specification}` : ''}</div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold">
-                        {p.category}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* VIEW 2: VISUAL PHOTO GRID */
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-1">
+              {filteredProducts.map(p => (
+                <div
+                  key={p.id}
+                  className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition flex flex-col group"
+                >
+                  <div className="relative">
+                    <ProductImage
+                      src={p.imageUrl}
+                      alt={p.name}
+                      category={p.category}
+                      size="custom"
+                      className="w-full h-40 rounded-none bg-slate-100"
+                    />
+                    <div className="absolute top-2 left-2 flex flex-col gap-1">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-mono font-bold">
+                        {p.sku}
                       </span>
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className={`font-mono font-bold ${p.stock <= p.minStock ? 'text-rose-600' : 'text-slate-900'}`}>
-                        {p.stock}
-                      </span>{' '}
-                      <span className="text-slate-500">{p.unit}</span>
-                      {p.stock <= p.minStock && (
-                        <div className="text-[9px] text-rose-500 font-bold uppercase mt-0.5">Kritis (Min: {p.minStock})</div>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono text-slate-600">
-                      {formatRupiah(p.hppPrice)}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono font-bold text-emerald-700">
-                      {formatRupiah(p.price)}
-                    </td>
-                    <td className="py-3 px-3 text-slate-600">
-                      {p.rackLocation || '-'}
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
+                    </div>
+                    <div className="absolute top-2 right-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shadow-xs ${
+                        p.stock <= p.minStock ? 'bg-rose-600 text-white' : 'bg-white/95 text-slate-800'
+                      }`}>
+                        Stok: {p.stock} {p.unit}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">{p.category}</div>
+                      <h4 className="font-bold text-slate-900 text-xs line-clamp-2 mt-0.5" title={p.name}>
+                        {p.name}
+                      </h4>
+                      {p.brand && <div className="text-[11px] text-slate-500 mt-0.5">{p.brand}</div>}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[10px] text-slate-500">Retail:</span>
+                        <span className="font-black font-mono text-emerald-700">{formatRupiah(p.price)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-[10px] text-slate-400">Modal (HPP):</span>
+                        <span className="font-mono text-slate-600">{formatRupiah(p.hppPrice)}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-slate-400 truncate">
+                        {p.rackLocation || 'Gudang Utama'}
+                      </span>
+                      <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleEditProduct(p)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                          title="Edit Barang"
+                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[11px] font-bold transition flex items-center gap-1"
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
+                          <Edit2 className="w-3 h-3" />
+                          <span>Edit</span>
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(p.id, p.name)}
-                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                          title="Hapus Barang"
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -571,8 +700,18 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
                   return (
                     <tr key={p.id} className="hover:bg-slate-50 transition">
                       <td className="py-3 px-3 font-bold text-slate-900">
-                        <div>{p.name}</div>
-                        <div className="text-[10px] font-mono text-slate-400">{p.sku} • {p.unit}</div>
+                        <div className="flex items-center gap-2.5">
+                          <ProductImage
+                            src={p.imageUrl}
+                            alt={p.name}
+                            category={p.category}
+                            size="xs"
+                          />
+                          <div>
+                            <div>{p.name}</div>
+                            <div className="text-[10px] font-mono text-slate-400">{p.sku} • {p.unit}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="py-3 px-3 text-right font-mono text-slate-600">
                         {formatRupiah(p.hppPrice)}
@@ -617,6 +756,15 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
             </div>
 
             <form onSubmit={handleSaveProduct} className="mt-4 space-y-4 text-xs">
+              {/* Product Photo Upload Section */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl">
+                <ProductImageUploader
+                  value={productForm.imageUrl}
+                  onChange={url => setProductForm({ ...productForm, imageUrl: url })}
+                  category={productForm.category}
+                />
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">SKU Barang *</label>

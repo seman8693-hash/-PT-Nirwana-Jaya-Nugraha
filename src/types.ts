@@ -9,6 +9,7 @@ export interface PosProduct {
   category: string;
   brand?: string;
   unit: string;
+  imageUrl?: string; // Foto / Gambar Produk Asli
   stock: number;
   minStock: number;
   hppPrice: number;        // Harga Modal Pokok (HPP)
@@ -239,6 +240,16 @@ export interface SalesInvoiceItem {
   total: number;
 }
 
+export interface InvoicePaymentRecord {
+  id: string;
+  date: string;
+  amount: number;
+  paymentMethod: string;
+  bankAccount: string;
+  refNo: string;
+  notes?: string;
+}
+
 export interface SalesInvoice {
   id: string;
   invoiceNumber: string;
@@ -250,16 +261,24 @@ export interface SalesInvoice {
   projectName?: string;
   referenceSph?: string;
   referencePo?: string;
+  referenceSo?: string;
+  doReference?: string;
   items: SalesInvoiceItem[];
   subtotal: number;
   discount: number;
+  // Manual PPN & PPH
+  ppnRate?: number;
   taxPpn: number;
+  pphType?: string;
+  pphRate?: number;
+  taxPph?: number;
   totalAmount: number;
   paidAmount: number;
   status: 'draft' | 'sent' | 'unpaid' | 'paid' | 'overdue';
   paymentMethod?: string;
   paymentDate?: string;
-  doReference?: string;
+  paymentHistory?: InvoicePaymentRecord[];
+  notes?: string;
 }
 
 export interface InvoiceStats {

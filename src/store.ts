@@ -28,6 +28,10 @@ import {
   INITIAL_UNITS,
   INITIAL_BANKS,
   INITIAL_COMPANY_SETTINGS,
+  INITIAL_SPH,
+  INITIAL_SALES_ORDERS,
+  INITIAL_INVOICES,
+  INITIAL_DELIVERY_ORDERS,
   generateRealMonthlyTrends
 } from './data/mockData';
 import { calculateSmartRestockMetrics } from './utils/format';
@@ -82,10 +86,14 @@ class Store {
         const parsed = JSON.parse(saved);
         return {
           products: (parsed.products && parsed.products.length > 0)
-            ? parsed.products.map((p: PosProduct) => ({
-                ...p,
-                ...calculateSmartRestockMetrics(p.stock, p.monthlyAvgSales || 20, p.leadTimeDays || 7)
-              }))
+            ? parsed.products.map((p: PosProduct) => {
+                const initial = INITIAL_PRODUCTS.find(ip => ip.id === p.id || ip.sku === p.sku);
+                return {
+                  ...p,
+                  imageUrl: p.imageUrl || initial?.imageUrl,
+                  ...calculateSmartRestockMetrics(p.stock, p.monthlyAvgSales || 20, p.leadTimeDays || 7)
+                };
+              })
             : JSON.parse(JSON.stringify(INITIAL_PRODUCTS)),
           customers: parsed.customers || JSON.parse(JSON.stringify(INITIAL_CUSTOMERS)),
           suppliers: parsed.suppliers || JSON.parse(JSON.stringify(INITIAL_SUPPLIERS)),
@@ -95,11 +103,11 @@ class Store {
           posTransactions: parsed.posTransactions || [],
           purchaseOrders: parsed.purchaseOrders || [],
           purchaseInvoices: parsed.purchaseInvoices || [],
-          sphQuotations: parsed.sphQuotations || [],
-          salesOrders: parsed.salesOrders || [],
-          salesInvoices: parsed.salesInvoices || [],
+          sphQuotations: (parsed.sphQuotations && parsed.sphQuotations.length > 0) ? parsed.sphQuotations : JSON.parse(JSON.stringify(INITIAL_SPH)),
+          salesOrders: (parsed.salesOrders && parsed.salesOrders.length > 0) ? parsed.salesOrders : JSON.parse(JSON.stringify(INITIAL_SALES_ORDERS)),
+          salesInvoices: (parsed.salesInvoices && parsed.salesInvoices.length > 0) ? parsed.salesInvoices : JSON.parse(JSON.stringify(INITIAL_INVOICES)),
           spkContracts: parsed.spkContracts || [],
-          deliveryOrders: parsed.deliveryOrders || [],
+          deliveryOrders: (parsed.deliveryOrders && parsed.deliveryOrders.length > 0) ? parsed.deliveryOrders : JSON.parse(JSON.stringify(INITIAL_DELIVERY_ORDERS)),
           bankAccounts: parsed.bankAccounts || JSON.parse(JSON.stringify(INITIAL_BANKS)),
           cashRecords: parsed.cashRecords || [],
           journalEntries: parsed.journalEntries || [],
@@ -134,11 +142,11 @@ class Store {
       posTransactions: [],
       purchaseOrders: [],
       purchaseInvoices: [],
-      sphQuotations: [],
-      salesOrders: [],
-      salesInvoices: [],
+      sphQuotations: JSON.parse(JSON.stringify(INITIAL_SPH)),
+      salesOrders: JSON.parse(JSON.stringify(INITIAL_SALES_ORDERS)),
+      salesInvoices: JSON.parse(JSON.stringify(INITIAL_INVOICES)),
       spkContracts: [],
-      deliveryOrders: [],
+      deliveryOrders: JSON.parse(JSON.stringify(INITIAL_DELIVERY_ORDERS)),
       bankAccounts: JSON.parse(JSON.stringify(INITIAL_BANKS)),
       cashRecords: [],
       journalEntries: [],
@@ -924,6 +932,185 @@ class Store {
     this.addAuditLog('Logistik DO', 'BUAT_DO_DARI_INVOICE', `Surat Jalan ${doNo} diterbitkan otomatis dari Faktur ${inv.invoiceNumber}`);
     this.save();
     return newDO;
+  }
+
+  public updateSalesInvoice(id: string, updates: Partial<SalesInvoice>): SalesInvoice | undefined {
+    const inv = this.state.salesInvoices.find(i => i.id === id);
+    if (!inv) return undefined;
+    const oldOutstanding = inv.status !== 'paid' ? (inv.totalAmount - inv.paidAmount) : 0;
+    Object.assign(inv, updates);
+
+    // Recalculate customer receivable
+    if (inv.status !== 'paid') {
+      const newOutstanding = inv.totalAmount - inv.paidAmount;
+      const diff = newOutstanding - oldOutstanding;
+      const cust = this.state.customers.find(c => c.name.toLowerCase() === inv.customerName.toLowerCase());
+      if (cust && diff !== 0) {
+        cust.currentReceivable = Math.max(0, cust.currentReceivable + diff);
+      }
+    }
+
+    this.addAuditLog('Penjualan', 'UPDATE_INVOICE', `Faktur Penjualan ${inv.invoiceNumber} diperbarui`);
+    this.save();
+    return inv;
+  }
+
+  public recordInvoicePayment(invoiceId: string, amount: number, method: string, bankId?: string, notes?: string): void {
+    const inv = this.state.salesInvoices.find(i => i.id === invoiceId);
+    if (!inv || amount <= 0) return;
+
+    const remaining = inv.totalAmount - inv.paidAmount;
+    const actualPay = Math.min(amount, remaining);
+    inv.paidAmount += actualPay;
+    inv.paymentDate = new Date().toISOString().split('T')[0];
+    inv.paymentMethod = method;
+
+    const paymentRecord = {
+      id: `pay-${Date.now()}`,
+      date: inv.paymentDate,
+      amount: actualPay,
+      paymentMethod: method,
+      bankAccount: method,
+      refNo: `BKM-${Date.now().toString().slice(-6)}`,
+      notes: notes || 'Pembayaran Tagihan Faktur'
+    };
+
+    if (!inv.paymentHistory) inv.paymentHistory = [];
+    inv.paymentHistory.push(paymentRecord);
+
+    if (inv.paidAmount >= inv.totalAmount) {
+      inv.status = 'paid';
+    }
+
+    // Potong piutang customer
+    const cust = this.state.customers.find(c => c.name.toLowerCase() === inv.customerName.toLowerCase());
+    if (cust) {
+      cust.currentReceivable = Math.max(0, cust.currentReceivable - actualPay);
+    }
+
+    // Tambah kas/bank
+    const bank = this.state.bankAccounts.find(b => b.id === bankId || b.bankName.includes(method)) || this.state.bankAccounts[0];
+    if (bank) {
+      bank.balance += actualPay;
+    }
+
+    // Catat arus kas masuk
+    this.state.cashRecords.unshift({
+      id: `csh-${Date.now()}`,
+      code: `KM-${new Date().getFullYear()}-${String(this.state.cashRecords.length + 1).padStart(4, '0')}`,
+      description: `Pembayaran Faktur ${inv.invoiceNumber} (${inv.customerName})`,
+      channel: method,
+      category: 'Pelunasan Faktur Proyek',
+      date: inv.paymentDate,
+      type: 'masuk',
+      amount: actualPay,
+      referenceDocument: inv.invoiceNumber
+    });
+
+    // Jurnal umum double entry
+    this.addJournalEntry(
+      inv.paymentDate,
+      inv.invoiceNumber,
+      `Penerimaan Piutang ${inv.invoiceNumber} (${inv.customerName})`,
+      bank?.bankName || 'Bank BCA',
+      actualPay,
+      'Piutang Usaha Customer',
+      actualPay
+    );
+
+    this.addAuditLog('Keuangan Piutang', 'BAYAR_FAKTUR', `Penerimaan pembayaran Faktur ${inv.invoiceNumber} senilai Rp ${actualPay.toLocaleString('id-ID')} (${inv.paidAmount >= inv.totalAmount ? 'LUNAS' : 'SEBAGIAN'})`);
+    this.save();
+  }
+
+  public createDeliveryOrderFromSalesOrder(soId: string): DeliveryOrder {
+    const so = this.state.salesOrders.find(s => s.id === soId);
+    if (!so) throw new Error('Sales Order tidak ditemukan');
+
+    const count = this.state.deliveryOrders.length + 1;
+    const doNo = `${this.state.companySettings.doPrefix || 'DO/NJN'}/${new Date().getFullYear()}/${String(count).padStart(4, '0')}`;
+    const cust = this.state.customers.find(c => c.name.toLowerCase() === so.customerName.toLowerCase());
+
+    const newDO: DeliveryOrder = {
+      id: `do-${Date.now()}`,
+      doNumber: doNo,
+      invoiceReference: '-',
+      customerName: so.customerName,
+      destinationAddress: cust?.address || 'Bandung & Sekitarnya',
+      driverName: 'Pak Dadang (Armada NJN)',
+      vehicleNumber: 'D 8841 AB (Colt Diesel)',
+      expedition: 'Armada Internal NJN',
+      trackingNumber: `NJN-LOG-${Date.now().toString().slice(-6)}`,
+      shippingDate: new Date().toISOString().split('T')[0],
+      estimatedArrival: so.deliveryDateTarget,
+      items: so.items.map(it => ({
+        productName: it.name,
+        qty: it.qty,
+        unit: it.unit
+      })),
+      status: 'dikirim'
+    };
+
+    this.state.deliveryOrders.unshift(newDO);
+    this.addAuditLog('Logistik DO', 'BUAT_DO_DARI_SO', `Surat Jalan ${doNo} diterbitkan dari Sales Order ${so.soNumber}`);
+    this.save();
+    return newDO;
+  }
+
+  public createInvoiceFromDeliveryOrder(doId: string): SalesInvoice {
+    const dOrder = this.state.deliveryOrders.find(d => d.id === doId);
+    if (!dOrder) throw new Error('DO tidak ditemukan');
+
+    const count = this.state.salesInvoices.length + 1;
+    const invNo = `${this.state.companySettings.invoicePrefix || 'INV/NJN'}/${new Date().getFullYear()}/${String(count).padStart(4, '0')}`;
+    const cust = this.state.customers.find(c => c.name.toLowerCase() === dOrder.customerName.toLowerCase());
+
+    const invoiceItems = dOrder.items.map(it => {
+      const prod = this.state.products.find(p => p.name.toLowerCase() === it.productName.toLowerCase());
+      const price = prod?.price || 100000;
+      return {
+        id: `inv-item-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        description: it.productName,
+        qty: it.qty,
+        unit: it.unit,
+        unitPrice: price,
+        total: it.qty * price
+      };
+    });
+
+    const subtotal = invoiceItems.reduce((acc, i) => acc + i.total, 0);
+    const taxPpn = Math.round(subtotal * 0.11);
+    const totalAmount = subtotal + taxPpn;
+
+    const newInvoice: SalesInvoice = {
+      id: `inv-${Date.now()}`,
+      invoiceNumber: invNo,
+      date: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+      customerName: dOrder.customerName,
+      customerAddress: dOrder.destinationAddress,
+      doReference: dOrder.doNumber,
+      items: invoiceItems,
+      subtotal,
+      discount: 0,
+      ppnRate: 11,
+      taxPpn,
+      pphType: 'none',
+      pphRate: 0,
+      taxPph: 0,
+      totalAmount,
+      paidAmount: 0,
+      status: 'unpaid'
+    };
+
+    dOrder.invoiceReference = invNo;
+    if (cust) {
+      cust.currentReceivable += totalAmount;
+    }
+
+    this.state.salesInvoices.unshift(newInvoice);
+    this.addAuditLog('Penjualan', 'BUAT_INVOICE_DARI_DO', `Faktur ${invNo} diterbitkan berdasarkan Surat Jalan ${dOrder.doNumber}`);
+    this.save();
+    return newInvoice;
   }
 
   // 7. SPK / OPERASIONAL

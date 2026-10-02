@@ -5,7 +5,11 @@ import {
   UnitMaster,
   BankAccount,
   CompanySettings,
-  MonthlySalesTrend
+  MonthlySalesTrend,
+  SalesInvoice,
+  DeliveryOrder,
+  SPHQuotation,
+  SalesOrder
 } from '../types';
 import { calculateSmartRestockMetrics } from '../utils/format';
 
@@ -22,6 +26,7 @@ const rawProducts = [
     category: 'Kabel Power',
     brand: 'Supreme Cable',
     unit: 'Meter',
+    imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&auto=format&fit=crop&q=80',
     stock: 45,
     minStock: 50,
     hppPrice: 155000,
@@ -41,6 +46,7 @@ const rawProducts = [
     category: 'Kabel Instalasi',
     brand: 'Supreme Cable',
     unit: 'Roll (50m)',
+    imageUrl: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=400&auto=format&fit=crop&q=80',
     stock: 12,
     minStock: 15,
     hppPrice: 560000,
@@ -60,6 +66,7 @@ const rawProducts = [
     category: 'Komponen MCB',
     brand: 'Schneider Electric',
     unit: 'Pcs',
+    imageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=80',
     stock: 25,
     minStock: 30,
     hppPrice: 42000,
@@ -79,6 +86,7 @@ const rawProducts = [
     category: 'Komponen MCB',
     brand: 'Schneider Electric',
     unit: 'Pcs',
+    imageUrl: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=400&auto=format&fit=crop&q=80',
     stock: 18,
     minStock: 10,
     hppPrice: 390000,
@@ -98,6 +106,7 @@ const rawProducts = [
     category: 'Kabel Power',
     brand: 'Supreme Cable',
     unit: 'Meter',
+    imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&auto=format&fit=crop&q=80',
     stock: 35,
     minStock: 40,
     hppPrice: 295000,
@@ -117,6 +126,7 @@ const rawProducts = [
     category: 'Box Panel Proyek',
     brand: 'NJN Local Manufacturing',
     unit: 'Unit',
+    imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?w=400&auto=format&fit=crop&q=80',
     stock: 8,
     minStock: 5,
     hppPrice: 1050000,
@@ -136,6 +146,7 @@ const rawProducts = [
     category: 'Pemutus Daya Utama',
     brand: 'Schneider Electric',
     unit: 'Unit',
+    imageUrl: 'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=400&auto=format&fit=crop&q=80',
     stock: 4,
     minStock: 5,
     hppPrice: 2150000,
@@ -155,6 +166,7 @@ const rawProducts = [
     category: 'Aksesoris Jalur Kabel',
     brand: 'EGA Conduit',
     unit: 'Batang (3m)',
+    imageUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&auto=format&fit=crop&q=80',
     stock: 140,
     minStock: 100,
     hppPrice: 14500,
@@ -184,7 +196,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     address: 'Kawasan Industri Gedebage Blok D-12, Bandung',
     type: 'kontraktor',
     creditLimit: 150000000,
-    currentReceivable: 0,
+    currentReceivable: 8675000,
     notes: 'Kontraktor ME Proyek Gedung & Pabrik'
   },
   {
@@ -197,7 +209,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     address: 'Jl. Ahmad Yani No. 120, Cimahi',
     type: 'grosir',
     creditLimit: 50000000,
-    currentReceivable: 0,
+    currentReceivable: 8214000,
     notes: 'Toko Listrik Cabang Pembelian Grosir'
   },
   {
@@ -373,3 +385,312 @@ export function generateRealMonthlyTrends(
     };
   });
 }
+
+/**
+ * INITIAL SPH QUOTATIONS (Alur Tahap 1)
+ */
+export const INITIAL_SPH: SPHQuotation[] = [
+  {
+    id: 'sph-1',
+    code: 'SPH/NJN/2026/0001',
+    customerName: 'PT. Wijaya Rekayasa Mandiri',
+    customerPhone: '081223344550',
+    projectTitle: 'Pengadaan Kabel NYY 4x16 & Panel Workshop B Gedebage',
+    date: '2026-09-01',
+    validUntil: '2026-10-01',
+    itemsSummary: 'Kabel Supreme NYY 4x16 mm² (80m) + Box Panel Wall Mounting 60x80x25cm (2 unit)',
+    subtotal: 17500000,
+    ppnAmount: 1925000,
+    totalAmount: 19425000,
+    status: 'converted_invoice',
+    statusLabel: 'Dikonversi ke SO / Invoice',
+    items: [
+      { id: '1', name: 'Kabel Supreme NYY 4x16 mm² (Tembaga)', qty: 80, unit: 'Meter', unitPrice: 185000, subtotal: 14800000 },
+      { id: '2', name: 'Box Panel Wall Mounting 60x80x25cm Top/Bottom Gland', qty: 2, unit: 'Unit', unitPrice: 1350000, subtotal: 2700000 }
+    ],
+    termsAndConditions: '1. Harga resmi franco Bandung, siap kirim armada internal NJN.\n2. Waktu pengiriman 2-3 hari kerja setelah konfirmasi PO.\n3. Pembayaran tempo 30 hari via Transfer BCA.'
+  },
+  {
+    id: 'sph-2',
+    code: 'SPH/NJN/2026/0002',
+    customerName: 'CV. Sumber Makmur Teknik',
+    customerPhone: '081399887766',
+    projectTitle: 'Pengadaan MCB 3 Phase & Conduit Listrik Pabrik Farmasi Cimahi',
+    date: '2026-09-18',
+    validUntil: '2026-10-18',
+    itemsSummary: 'Schneider MCB 3 Phase Domae 63A (15 pcs) + Pipa Conduit 20mm EGA (60 btg)',
+    subtotal: 6825000,
+    ppnAmount: 750750,
+    totalAmount: 7575750,
+    status: 'converted_invoice',
+    statusLabel: 'Dikonversi ke SO / Invoice',
+    items: [
+      { id: '1', name: 'Schneider MCB 3 Phase Domae 63A 4.5kA', qty: 15, unit: 'Pcs', unitPrice: 385000, subtotal: 5775000 },
+      { id: '2', name: 'Pipa Conduit PVC High Impact 20mm (EGA)', qty: 60, unit: 'Batang (3m)', unitPrice: 17500, subtotal: 1050000 }
+    ],
+    termsAndConditions: '1. Pembayaran tempo 30 hari via transfer Bank.\n2. Garansi Schneider resmi 1 tahun.'
+  }
+];
+
+/**
+ * INITIAL SALES ORDERS (Alur Tahap 2)
+ */
+export const INITIAL_SALES_ORDERS: SalesOrder[] = [
+  {
+    id: 'so-1',
+    soNumber: 'SO/NJN/2026/0001',
+    sphReference: 'SPH/NJN/2026/0001',
+    customerName: 'PT. Wijaya Rekayasa Mandiri',
+    customerPhone: '081223344550',
+    orderDate: '2026-09-04',
+    deliveryDateTarget: '2026-09-09',
+    totalAmount: 19075000,
+    status: 'completed',
+    notes: 'Proyek Workshop B Gedebage - PO No. WRM-092',
+    items: [
+      { id: '1', name: 'Kabel Supreme NYY 4x16 mm²', qty: 80, unit: 'Meter', unitPrice: 185000, subtotal: 14800000 },
+      { id: '2', name: 'Box Panel Wall Mounting 60x80x25cm', qty: 2, unit: 'Unit', unitPrice: 1350000, subtotal: 2700000 }
+    ]
+  },
+  {
+    id: 'so-2',
+    soNumber: 'SO/NJN/2026/0002',
+    sphReference: 'SPH/NJN/2026/0002',
+    customerName: 'CV. Sumber Makmur Teknik',
+    customerPhone: '081399887766',
+    orderDate: '2026-09-20',
+    deliveryDateTarget: '2026-09-25',
+    totalAmount: 7437000,
+    status: 'in_progress',
+    notes: 'Pengadaan MCB 3 Phase Proyek Pabrik Farmasi Cimahi',
+    items: [
+      { id: '1', name: 'Schneider MCB 3 Phase Domae 63A', qty: 15, unit: 'Pcs', unitPrice: 385000, subtotal: 5775000 },
+      { id: '2', name: 'Pipa Conduit PVC High Impact 20mm (EGA)', qty: 60, unit: 'Batang (3m)', unitPrice: 17500, subtotal: 1050000 }
+    ]
+  }
+];
+
+/**
+ * INITIAL SALES INVOICES (Sumber Data Tunggal untuk 4 Tempat: Penjualan, Dashboard, Keuangan, Pengiriman)
+ */
+export const INITIAL_INVOICES: SalesInvoice[] = [
+  {
+    id: 'inv-1',
+    invoiceNumber: 'INV/NJN/2026/0001',
+    date: '2026-09-05',
+    dueDate: '2026-09-25', // Overdue!
+    customerName: 'PT. Wijaya Rekayasa Mandiri',
+    customerPhone: '081223344550',
+    customerAddress: 'Kawasan Industri Gedebage Blok D-12, Bandung',
+    projectName: 'Proyek Instalasi Listrik Workshop B Gedebage',
+    referenceSph: 'SPH/NJN/2026/0001',
+    referenceSo: 'SO/NJN/2026/0001',
+    referencePo: 'PO-WRM-092',
+    doReference: 'DO/NJN/2026/0001',
+    items: [
+      { id: '1', description: 'Kabel Supreme NYY 4x16 mm²', qty: 80, unit: 'Meter', unitPrice: 185000, total: 14800000 },
+      { id: '2', description: 'Box Panel Wall Mounting 60x80x25cm', qty: 2, unit: 'Unit', unitPrice: 1350000, total: 2700000 }
+    ],
+    subtotal: 17500000,
+    discount: 0,
+    ppnRate: 11,
+    taxPpn: 1925000, // Manual PPN
+    pphType: 'PPh 23 Jasa (2%)',
+    pphRate: 2,
+    taxPph: 350000, // Manual PPh
+    totalAmount: 19075000,
+    paidAmount: 10400000,
+    status: 'overdue',
+    paymentMethod: 'Transfer Bank BCA',
+    paymentDate: '2026-09-10',
+    paymentHistory: [
+      {
+        id: 'pay-1',
+        date: '2026-09-10',
+        amount: 10400000,
+        paymentMethod: 'Transfer Bank BCA',
+        bankAccount: 'Bank Central Asia (BCA)',
+        refNo: 'BKM-88120',
+        notes: 'Uang muka termin 1 (50%)'
+      }
+    ],
+    notes: 'Sisa termin 2 jatuh tempo saat serah terima barang (25 Sep 2026).'
+  },
+  {
+    id: 'inv-2',
+    invoiceNumber: 'INV/NJN/2026/0002',
+    date: '2026-09-22',
+    dueDate: '2026-10-22',
+    customerName: 'CV. Sumber Makmur Teknik',
+    customerPhone: '081399887766',
+    customerAddress: 'Jl. Ahmad Yani No. 120, Cimahi',
+    projectName: 'Pengadaan MCB 3 Phase Proyek Pabrik Farmasi Cimahi',
+    referenceSph: 'SPH/NJN/2026/0002',
+    referenceSo: 'SO/NJN/2026/0002',
+    doReference: 'DO/NJN/2026/0002',
+    items: [
+      { id: '1', description: 'Schneider MCB 3 Phase Domae 63A', qty: 15, unit: 'Pcs', unitPrice: 385000, total: 5775000 },
+      { id: '2', description: 'Pipa Conduit PVC High Impact 20mm (EGA)', qty: 60, unit: 'Batang (3m)', unitPrice: 17500, total: 1050000 }
+    ],
+    subtotal: 6825000,
+    discount: 125000,
+    ppnRate: 11,
+    taxPpn: 737000,
+    pphType: 'none',
+    pphRate: 0,
+    taxPph: 0,
+    totalAmount: 7437000,
+    paidAmount: 0,
+    status: 'unpaid',
+    notes: 'Termin pembayaran 30 hari kalender via transfer Rekening BCA NJN.'
+  },
+  {
+    id: 'inv-3',
+    invoiceNumber: 'INV/NJN/2026/0003',
+    date: '2026-09-15',
+    dueDate: '2026-09-30',
+    customerName: 'PT. Wijaya Rekayasa Mandiri',
+    customerPhone: '081223344550',
+    customerAddress: 'Kawasan Industri Gedebage Blok D-12, Bandung',
+    projectName: 'Pengadaan Kabel NYM & NYY Gedung Operasional',
+    doReference: 'DO/NJN/2026/0003',
+    items: [
+      { id: '1', description: 'Kabel Supreme NYM 3x2.5 mm² (50m Roll)', qty: 10, unit: 'Roll (50m)', unitPrice: 625000, total: 6250000 }
+    ],
+    subtotal: 6250000,
+    discount: 0,
+    ppnRate: 11,
+    taxPpn: 687500,
+    pphType: 'none',
+    pphRate: 0,
+    taxPph: 0,
+    totalAmount: 6937500,
+    paidAmount: 6937500,
+    status: 'paid',
+    paymentDate: '2026-09-28',
+    paymentMethod: 'Transfer Bank Mandiri',
+    paymentHistory: [
+      {
+        id: 'pay-2',
+        date: '2026-09-28',
+        amount: 6937500,
+        paymentMethod: 'Transfer Bank Mandiri',
+        bankAccount: 'Bank Mandiri Operasional',
+        refNo: 'MDR-99214',
+        notes: 'Pelunasan faktur 100%'
+      }
+    ],
+    notes: 'Faktur telah dilunasi penuh via Bank Mandiri.'
+  },
+  {
+    id: 'inv-4',
+    invoiceNumber: 'INV/NJN/2026/0004',
+    date: '2026-09-28',
+    dueDate: '2026-10-28',
+    customerName: 'CV. Sumber Makmur Teknik',
+    customerPhone: '081399887766',
+    customerAddress: 'Jl. Ahmad Yani No. 120, Cimahi',
+    projectName: 'Pengadaan Aksesoris Jalur Kabel Listrik Tahap 2',
+    items: [
+      { id: '1', description: 'Pipa Conduit PVC High Impact 20mm (EGA)', qty: 40, unit: 'Batang (3m)', unitPrice: 17500, total: 700000 }
+    ],
+    subtotal: 700000,
+    discount: 0,
+    ppnRate: 11,
+    taxPpn: 77000,
+    pphType: 'none',
+    pphRate: 0,
+    taxPph: 0,
+    totalAmount: 777000,
+    paidAmount: 0,
+    status: 'sent',
+    notes: 'Faktur fisik telah dikirim via ekspedisi internal ke kantor Cimahi.'
+  },
+  {
+    id: 'inv-5',
+    invoiceNumber: 'INV/NJN/2026/0005',
+    date: '2026-09-30',
+    dueDate: '2026-10-30',
+    customerName: 'PT. Wijaya Rekayasa Mandiri',
+    customerPhone: '081223344550',
+    customerAddress: 'Kawasan Industri Gedebage Blok D-12, Bandung',
+    projectName: 'Draft Tagihan Tambahan Material MCB & Aksesoris',
+    items: [
+      { id: '1', description: 'Schneider MCB 1 Phase Domae 16A', qty: 20, unit: 'Pcs', unitPrice: 58000, total: 1160000 }
+    ],
+    subtotal: 1160000,
+    discount: 0,
+    ppnRate: 11,
+    taxPpn: 127600,
+    pphType: 'PPh 23 Jasa (2%)',
+    pphRate: 2,
+    taxPph: 23200,
+    totalAmount: 1264400,
+    paidAmount: 0,
+    status: 'draft',
+    notes: 'Draft internal menunggu verifikasi Berita Acara Pekerjaan.'
+  }
+];
+
+/**
+ * INITIAL DELIVERY ORDERS (DO / Surat Jalan terkait Faktur & Pengiriman)
+ */
+export const INITIAL_DELIVERY_ORDERS: DeliveryOrder[] = [
+  {
+    id: 'do-1',
+    doNumber: 'DO/NJN/2026/0001',
+    invoiceReference: 'INV/NJN/2026/0001',
+    customerName: 'PT. Wijaya Rekayasa Mandiri',
+    destinationAddress: 'Kawasan Industri Gedebage Blok D-12, Bandung',
+    driverName: 'Pak Dadang (Armada NJN)',
+    vehicleNumber: 'D 8841 AB (Colt Diesel)',
+    expedition: 'Armada Internal NJN',
+    trackingNumber: 'NJN-LOG-881290',
+    shippingDate: '2026-09-08',
+    estimatedArrival: '2026-09-09',
+    items: [
+      { productName: 'Kabel Supreme NYY 4x16 mm²', qty: 80, unit: 'Meter' },
+      { productName: 'Box Panel Wall Mounting 60x80x25cm', qty: 2, unit: 'Unit' }
+    ],
+    status: 'diterima',
+    receivedDate: '2026-09-09',
+    recipientNotes: 'Diterima lengkap oleh Pak Budi (Gudang Proyek WRM) dalam kondisi baik.'
+  },
+  {
+    id: 'do-2',
+    doNumber: 'DO/NJN/2026/0002',
+    invoiceReference: 'INV/NJN/2026/0002',
+    customerName: 'CV. Sumber Makmur Teknik',
+    destinationAddress: 'Jl. Ahmad Yani No. 120, Cimahi',
+    driverName: 'Asep Saepudin',
+    vehicleNumber: 'D 8102 YZ (Grand Max Pick Up)',
+    expedition: 'Armada Internal NJN',
+    trackingNumber: 'NJN-LOG-992104',
+    shippingDate: '2026-09-24',
+    estimatedArrival: '2026-09-25',
+    items: [
+      { productName: 'Schneider MCB 3 Phase Domae 63A', qty: 15, unit: 'Pcs' },
+      { productName: 'Pipa Conduit PVC High Impact 20mm (EGA)', qty: 60, unit: 'Batang (3m)' }
+    ],
+    status: 'dikirim'
+  },
+  {
+    id: 'do-3',
+    doNumber: 'DO/NJN/2026/0003',
+    invoiceReference: 'INV/NJN/2026/0003',
+    customerName: 'PT. Wijaya Rekayasa Mandiri',
+    destinationAddress: 'Kawasan Industri Gedebage Blok D-12, Bandung',
+    driverName: 'Pak Dadang (Armada NJN)',
+    vehicleNumber: 'D 8841 AB (Colt Diesel)',
+    expedition: 'Armada Internal NJN',
+    trackingNumber: 'NJN-LOG-773412',
+    shippingDate: '2026-09-16',
+    estimatedArrival: '2026-09-17',
+    items: [
+      { productName: 'Kabel Supreme NYM 3x2.5 mm² (50m Roll)', qty: 10, unit: 'Roll (50m)' }
+    ],
+    status: 'diterima',
+    receivedDate: '2026-09-17',
+    recipientNotes: 'Diterima utuh tanpa cacat.'
+  }
+];
