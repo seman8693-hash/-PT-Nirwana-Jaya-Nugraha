@@ -68,7 +68,9 @@ export const RESOURCES: ResourceSpec[] = [
   {
     path: 'users', table: 'app_users', perm: 'users:write', pk: 'id',
     orderBy: 'name', orderDir: 'ASC',
-    columns: [...BASE, 'username', 'name', 'role', 'pin_hash', 'pin_salt', 'active', 'last_login'],
+    // pin_hash / pin_salt sengaja TIDAK bisa ditulis lewat CRUD umum -
+    // PIN hanya berubah lewat /api/auth/change-pin dan /api/users/:id/reset-pin.
+    columns: [...BASE, 'username', 'name', 'role', 'active', 'last_login'],
   },
   {
     path: 'stock-movements', table: 'stock_movements', perm: 'products:write', pk: 'id',

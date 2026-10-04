@@ -264,6 +264,86 @@ async function handlePosCheckout(env: Env, req: Request, session: Session) {
   return json({ ok: true, id: txn.id }, 201);
 }
 
+/** PIN harus 4-8 digit. */
+function isValidPin(pin: unknown): pin is string {
+  return typeof pin === 'string' && /^\d{4,8}$/.test(pin);
+}
+
+/**
+ * Pengguna mengganti PIN-nya sendiri.
+ * Wajib menyertakan PIN lama agar sesi yang dibajak tidak bisa langsung mencuri akun.
+ */
+async function handleChangePin(env: Env, req: Request, session: Session) {
+  const body = await readJson(req);
+  const oldPin = String(body.oldPin ?? '');
+  const newPin = String(body.newPin ?? '');
+
+  if (!isValidPin(oldPin)) return fail('PIN lama harus 4-8 digit', 400);
+  if (!isValidPin(newPin)) return fail('PIN baru harus 4-8 digit', 400);
+  if (oldPin === newPin) return fail('PIN baru harus berbeda dari PIN lama', 400);
+
+  const user = await env.DB.prepare(
+    'SELECT pin_hash, pin_salt FROM app_users WHERE id = ? AND active = 1'
+  ).bind(session.sub).first<{ pin_hash: string | null; pin_salt: string | null }>();
+
+  if (!user?.pin_hash || !user.pin_salt) {
+    return fail('Akun ini belum memiliki PIN', 409);
+  }
+
+  const ok = await verifyPin(oldPin, user.pin_salt, user.pin_hash);
+  if (!ok) return fail('PIN lama salah', 401);
+
+  const salt = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+  await env.DB.prepare(
+    'UPDATE app_users SET pin_hash = ?, pin_salt = ?, updated_at = ? WHERE id = ?'
+  ).bind(await hashPin(newPin, salt), salt, nowIso(), session.sub).run();
+
+  await env.DB.prepare(
+    `INSERT INTO audit_logs
+     (id, timestamp, user_name, user_id, user_role, action, module, details, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?)`
+  ).bind(
+    `aud-${crypto.randomUUID()}`, nowIso(), session.name, session.sub, session.role,
+    'CHANGE_PIN', 'Keamanan', `${session.username} mengganti PIN-nya sendiri`, nowIso()
+  ).run();
+
+  return json({ ok: true, message: 'PIN berhasil diganti. Gunakan PIN baru saat login berikutnya.' });
+}
+
+/** Owner me-reset PIN user lain (untuk yang lupa). */
+async function handleResetPin(env: Env, req: Request, session: Session, targetId: string) {
+  if (!can(session.role, 'users:write')) {
+    return fail('Hanya pemilik (owner) yang dapat me-reset PIN user lain', 403);
+  }
+
+  const body = await readJson(req);
+  const newPin = String(body.newPin ?? '');
+  if (!isValidPin(newPin)) return fail('PIN baru harus 4-8 digit', 400);
+
+  const target = await env.DB.prepare('SELECT username, name FROM app_users WHERE id = ?')
+    .bind(targetId).first<{ username: string; name: string }>();
+  if (!target) return fail('User tidak ditemukan', 404);
+
+  const salt = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+  const info = await env.DB.prepare(
+    'UPDATE app_users SET pin_hash = ?, pin_salt = ?, updated_at = ? WHERE id = ?'
+  ).bind(await hashPin(newPin, salt), salt, nowIso(), targetId).run();
+
+  if (!info.meta?.changes) return fail('Gagal mengubah PIN', 500);
+
+  await env.DB.prepare(
+    `INSERT INTO audit_logs
+     (id, timestamp, user_name, user_id, user_role, action, module, details, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?)`
+  ).bind(
+    `aud-${crypto.randomUUID()}`, nowIso(), session.name, session.sub, session.role,
+    'RESET_PIN', 'Keamanan',
+    `Reset PIN ${target.username} (${target.name}) oleh ${session.username}`, nowIso()
+  ).run();
+
+  return json({ ok: true, message: `PIN ${target.username} berhasil di-reset.` });
+}
+
 /* ------------------------------------------------------------------ *
  * Router
  * ------------------------------------------------------------------ */
@@ -286,6 +366,17 @@ async function handleApi(env: Env, req: Request, url: URL): Promise<Response> {
 
   if (path === 'pos/checkout' && req.method === 'POST') {
     return handlePosCheckout(env, req, session);
+  }
+
+  // Ganti PIN sendiri.
+  if (path === 'auth/change-pin' && req.method === 'POST') {
+    return handleChangePin(env, req, session);
+  }
+
+  // Owner me-reset PIN user lain: /api/users/:id/reset-pin
+  const resetMatch = path.match(/^users\/([^/]+)\/reset-pin$/);
+  if (resetMatch && req.method === 'POST') {
+    return handleResetPin(env, req, session, resetMatch[1]);
   }
 
   const [collection, id] = path.split('/');

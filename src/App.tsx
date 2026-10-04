@@ -19,7 +19,8 @@ import { NjnLogo } from './components/NjnLogo';
 import { store } from './store';
 import { PosProduct, SalesInvoice, SPHQuotation, PKSContract, PurchaseInvoice, DeliveryOrder } from './types';
 import { formatRupiah, formatDate } from './utils/format';
-import { X, Printer, CheckCircle, Building2, LogOut, Check, Users } from 'lucide-react';
+import { X, Printer, CheckCircle, Building2, LogOut, Check, Users, KeyRound } from 'lucide-react';
+import { PinModal } from './components/PinModal';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
@@ -36,6 +37,13 @@ export const App: React.FC = () => {
   const [qrisConfirmFn, setQrisConfirmFn] = useState<(() => void) | null>(null);
 
   const [isUserSwitchModalOpen, setIsUserSwitchModalOpen] = useState(false);
+
+  // Modal ganti/reset PIN
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [pinTarget, setPinTarget] = useState<{ id: string; username: string; name: string } | null>(null);
+
+  // Hanya owner yang boleh me-reset PIN user lain.
+  const isOwner = store.getCurrentUser().role === 'owner';
 
   // Print Preview Modal
   const [printData, setPrintData] = useState<{
@@ -258,6 +266,12 @@ export const App: React.FC = () => {
       )}
 
       {/* SWITCH USER / LOGOUT MODAL */}
+      <PinModal
+        open={isPinModalOpen}
+        targetUser={pinTarget}
+        onClose={() => setIsPinModalOpen(false)}
+      />
+
       {isUserSwitchModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 text-xs">
@@ -302,12 +316,37 @@ export const App: React.FC = () => {
                       </div>
                     </div>
                     {isSelected && <Check className="w-4 h-4 text-amber-600" />}
+                    {isOwner && !isSelected && (
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          setIsUserSwitchModalOpen(false);
+                          setPinTarget({ id: user.id, username: user.username, name: user.name });
+                          setIsPinModalOpen(true);
+                        }}
+                        title="Reset PIN user ini"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition"
+                      >
+                        <KeyRound className="w-4 h-4" />
+                      </button>
+                    )}
                   </button>
                 );
               })}
             </div>
 
-            <div className="pt-3 border-t flex justify-end">
+            <div className="pt-3 border-t flex items-center justify-between gap-2">
+              <button
+                onClick={() => {
+                  setIsUserSwitchModalOpen(false);
+                  setPinTarget(null);
+                  setIsPinModalOpen(true);
+                }}
+                className="px-4 py-2 border rounded-xl font-bold flex items-center gap-1.5 text-slate-700 hover:bg-slate-50"
+              >
+                <KeyRound className="w-4 h-4" />
+                Ganti PIN Saya
+              </button>
               <button
                 onClick={() => setIsUserSwitchModalOpen(false)}
                 className="px-4 py-2 border rounded-xl font-bold"

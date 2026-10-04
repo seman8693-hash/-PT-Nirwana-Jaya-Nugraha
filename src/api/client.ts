@@ -121,6 +121,17 @@ export const api = {
 
   me: () => request<{ ok: boolean; user: SessionUser }>('/auth/me'),
 
+  changePin: (oldPin: string, newPin: string) =>
+    request<{ ok: boolean; message: string }>('/auth/change-pin', {
+      method: 'POST', body: { oldPin, newPin },
+    }),
+
+  resetPin: (userId: string, newPin: string) =>
+    request<{ ok: boolean; message: string }>(
+      `/users/${encodeURIComponent(userId)}/reset-pin`, {
+        method: 'POST', body: { newPin },
+      }),
+
   list: <T = any>(resource: string, params?: { q?: string; limit?: number; offset?: number }) => {
     const qs = new URLSearchParams();
     if (params?.q) qs.set('q', params.q);
