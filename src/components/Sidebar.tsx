@@ -82,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Pembelian',
       sublabel: 'PO, Penerimaan & Hutang',
       icon: ShoppingBag,
-      badge: `${store.getPurchaseOrders().length} PO`,
+      badge: store.getPurchaseOrders().length > 0 ? `${store.getPurchaseOrders().length} PO` : undefined,
       badgeColor: 'bg-indigo-500/20 text-indigo-300'
     },
     {
@@ -91,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Penjualan',
       sublabel: 'SPH, SO, Invoice & Piutang',
       icon: TrendingUp,
-      badge: `${store.getSPHList().length} SPH`,
+      badge: store.getSPHList().length > 0 ? `${store.getSPHList().length} SPH` : undefined,
       badgeColor: 'bg-blue-500/20 text-blue-300'
     },
     {
@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'SPK / Operasional',
       sublabel: 'Pekerjaan, PIC & Jadwal',
       icon: Wrench,
-      badge: `${store.getSPKList().length} SPK`,
+      badge: store.getSPKList().length > 0 ? `${store.getSPKList().length} SPK` : undefined,
       badgeColor: 'bg-cyan-500/20 text-cyan-300'
     },
     {

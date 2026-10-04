@@ -93,7 +93,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
     }
   };
 
-  const progressPercent = Math.min(100, Math.round((kpi.totalOmsetPenjualan / targetAmount) * 100)) || 0;
+  const progressPercent = targetAmount > 0 ? Math.min(100, Math.round((kpi.totalOmsetPenjualan / targetAmount) * 100)) : 0;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">

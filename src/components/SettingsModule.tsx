@@ -519,10 +519,33 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ onNotify }) => {
             <button
               onClick={handleImportBackup}
               disabled={!importJsonText.trim()}
-              className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white rounded-xl font-bold shadow transition"
+              className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white rounded-xl font-bold shadow transition"
             >
               <Upload className="w-4 h-4" />
               <span>Pulihkan / Restore Database Sekarang</span>
+            </button>
+          </div>
+
+          {/* Reset / Bersihkan Database ke Nol */}
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-3">
+            <div>
+              <span className="font-black text-rose-900 block text-xs">Kosongkan Semua Data Dummy (Mulai Nol untuk Kerja)</span>
+              <p className="text-[11px] text-rose-700 mt-0.5">
+                Menghapus semua data dummy faktur, SPH, DO, penjualan kasir, hutang-piutang, kartu stok, dan master barang. Semua saldo menjadi Rp 0 bersih siap untuk input data kerja riil perusahaan Anda.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm('YAKIN INGIN MENGHAPUS SEMUA DATA DUMMY?\n\nSemua transaksi, faktur, kasir, dan master barang akan di-nol-kan untuk memulai kerja nyata operasional.')) {
+                  store.resetAllDataToZero();
+                  onNotify?.('Semua data dummy telah dihapus! Database bersih ke nol siap kerja operasional.', 'success');
+                }
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow transition"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Hapus Semua Dummy &amp; Jadikan Nol Bersih</span>
             </button>
           </div>
         </div>

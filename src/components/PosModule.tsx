@@ -317,14 +317,22 @@ export const PosModule: React.FC<PosModuleProps> = ({
               </div>
 
               {selectedProduct && (
-                <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80 flex items-center justify-between text-xs">
-                  <div>
-                    <div className="font-bold text-slate-900">{selectedProduct.name}</div>
-                    <div className="text-[11px] text-slate-500 font-mono">
-                      Stok: {selectedProduct.stock} {selectedProduct.unit} • Lokasi: {selectedProduct.rackLocation || 'Gudang'}
+                <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <ProductImage
+                      src={selectedProduct.imageUrl}
+                      alt={selectedProduct.name}
+                      category={selectedProduct.category}
+                      size="md"
+                    />
+                    <div className="min-w-0">
+                      <div className="font-bold text-slate-900 truncate">{selectedProduct.name}</div>
+                      <div className="text-[11px] text-slate-500 font-mono">
+                        Stok: {selectedProduct.stock} {selectedProduct.unit} • Lokasi: {selectedProduct.rackLocation || 'Gudang'}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <div className="text-xs text-slate-500">Harga Satuan</div>
                     <div className="font-black font-mono text-emerald-700 text-sm">
                       {formatRupiah(
@@ -428,7 +436,13 @@ export const PosModule: React.FC<PosModuleProps> = ({
                 cart.map(item => {
                   const price = item.customPrice !== undefined ? item.customPrice : item.product.price;
                   return (
-                    <div key={item.product.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2">
+                    <div key={item.product.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2.5">
+                      <ProductImage
+                        src={item.product.imageUrl}
+                        alt={item.product.name}
+                        category={item.product.category}
+                        size="xs"
+                      />
                       <div className="min-w-0 flex-1">
                         <div className="font-bold text-slate-900 truncate">{item.product.name}</div>
                         <div className="text-[10px] text-slate-500 font-mono">

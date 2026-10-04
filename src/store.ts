@@ -36,7 +36,7 @@ import {
 } from './data/mockData';
 import { calculateSmartRestockMetrics } from './utils/format';
 
-const STORAGE_KEY = 'njn_pos_erp_operational_v3';
+const STORAGE_KEY = 'njn_pos_erp_clean_work_v4';
 
 export interface AppState {
   products: PosProduct[];
@@ -81,72 +81,76 @@ class Store {
 
   private loadInitialState(): AppState {
     try {
+      // Clear legacy dummy storage keys
+      if (!localStorage.getItem(STORAGE_KEY)) {
+        localStorage.removeItem('njn_pos_erp_operational_v3');
+        localStorage.removeItem('njn_pos_erp_operational_v2');
+        localStorage.removeItem('njn_pos_erp_operational_v1');
+      }
+
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         return {
-          products: (parsed.products && parsed.products.length > 0)
-            ? parsed.products.map((p: PosProduct) => {
-                const initial = INITIAL_PRODUCTS.find(ip => ip.id === p.id || ip.sku === p.sku);
-                return {
-                  ...p,
-                  imageUrl: p.imageUrl || initial?.imageUrl,
-                  ...calculateSmartRestockMetrics(p.stock, p.monthlyAvgSales || 20, p.leadTimeDays || 7)
-                };
-              })
-            : JSON.parse(JSON.stringify(INITIAL_PRODUCTS)),
-          customers: parsed.customers || JSON.parse(JSON.stringify(INITIAL_CUSTOMERS)),
-          suppliers: parsed.suppliers || JSON.parse(JSON.stringify(INITIAL_SUPPLIERS)),
-          units: parsed.units || JSON.parse(JSON.stringify(INITIAL_UNITS)),
-          stockMovements: parsed.stockMovements || [],
-          stockOpnames: parsed.stockOpnames || [],
-          posTransactions: parsed.posTransactions || [],
-          purchaseOrders: parsed.purchaseOrders || [],
-          purchaseInvoices: parsed.purchaseInvoices || [],
-          sphQuotations: (parsed.sphQuotations && parsed.sphQuotations.length > 0) ? parsed.sphQuotations : JSON.parse(JSON.stringify(INITIAL_SPH)),
-          salesOrders: (parsed.salesOrders && parsed.salesOrders.length > 0) ? parsed.salesOrders : JSON.parse(JSON.stringify(INITIAL_SALES_ORDERS)),
-          salesInvoices: (parsed.salesInvoices && parsed.salesInvoices.length > 0) ? parsed.salesInvoices : JSON.parse(JSON.stringify(INITIAL_INVOICES)),
-          spkContracts: parsed.spkContracts || [],
-          deliveryOrders: (parsed.deliveryOrders && parsed.deliveryOrders.length > 0) ? parsed.deliveryOrders : JSON.parse(JSON.stringify(INITIAL_DELIVERY_ORDERS)),
-          bankAccounts: parsed.bankAccounts || JSON.parse(JSON.stringify(INITIAL_BANKS)),
-          cashRecords: parsed.cashRecords || [],
-          journalEntries: parsed.journalEntries || [],
-          users: parsed.users || DEFAULT_USERS,
-          auditLogs: parsed.auditLogs || [
+          products: Array.isArray(parsed.products)
+            ? parsed.products.map((p: PosProduct) => ({
+                ...p,
+                imageUrl: p.imageUrl || '',
+                ...calculateSmartRestockMetrics(p.stock || 0, p.monthlyAvgSales || 20, p.leadTimeDays || 7)
+              }))
+            : [],
+          customers: Array.isArray(parsed.customers) ? parsed.customers : [],
+          suppliers: Array.isArray(parsed.suppliers) ? parsed.suppliers : [],
+          units: (Array.isArray(parsed.units) && parsed.units.length > 0) ? parsed.units : JSON.parse(JSON.stringify(INITIAL_UNITS)),
+          stockMovements: Array.isArray(parsed.stockMovements) ? parsed.stockMovements : [],
+          stockOpnames: Array.isArray(parsed.stockOpnames) ? parsed.stockOpnames : [],
+          posTransactions: Array.isArray(parsed.posTransactions) ? parsed.posTransactions : [],
+          purchaseOrders: Array.isArray(parsed.purchaseOrders) ? parsed.purchaseOrders : [],
+          purchaseInvoices: Array.isArray(parsed.purchaseInvoices) ? parsed.purchaseInvoices : [],
+          sphQuotations: Array.isArray(parsed.sphQuotations) ? parsed.sphQuotations : [],
+          salesOrders: Array.isArray(parsed.salesOrders) ? parsed.salesOrders : [],
+          salesInvoices: Array.isArray(parsed.salesInvoices) ? parsed.salesInvoices : [],
+          spkContracts: Array.isArray(parsed.spkContracts) ? parsed.spkContracts : [],
+          deliveryOrders: Array.isArray(parsed.deliveryOrders) ? parsed.deliveryOrders : [],
+          bankAccounts: (Array.isArray(parsed.bankAccounts) && parsed.bankAccounts.length > 0) ? parsed.bankAccounts : JSON.parse(JSON.stringify(INITIAL_BANKS)),
+          cashRecords: Array.isArray(parsed.cashRecords) ? parsed.cashRecords : [],
+          journalEntries: Array.isArray(parsed.journalEntries) ? parsed.journalEntries : [],
+          users: (Array.isArray(parsed.users) && parsed.users.length > 0) ? parsed.users : DEFAULT_USERS,
+          auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [
             {
               id: 'log-init',
               timestamp: new Date().toISOString(),
               userName: 'System Admin',
               userRole: 'owner',
-              action: 'SISTEM_DIMULAI',
+              action: 'DATABASE_BERSIH_DIMULAI',
               module: 'Core ERP',
-              details: 'Sistem POS + ERP PT Nirwana Jaya Nugraha siap digunakan secara operasional nyata.'
+              details: 'Sistem POS + ERP PT Nirwana Jaya Nugraha siap digunakan secara operasional kerja bersih tanpa dummy data.'
             }
           ],
           companySettings: parsed.companySettings || INITIAL_COMPANY_SETTINGS,
-          targetAmount: parsed.targetAmount || 150000000,
+          targetAmount: typeof parsed.targetAmount === 'number' ? parsed.targetAmount : 0,
           currentUser: parsed.currentUser || DEFAULT_USERS[0]
         };
       }
     } catch (e) {
-      console.error('Gagal membaca database lokal, inisialisasi master data asli:', e);
+      console.error('Gagal membaca database lokal, inisialisasi database bersih:', e);
     }
 
     return {
-      products: JSON.parse(JSON.stringify(INITIAL_PRODUCTS)),
-      customers: JSON.parse(JSON.stringify(INITIAL_CUSTOMERS)),
-      suppliers: JSON.parse(JSON.stringify(INITIAL_SUPPLIERS)),
+      products: [],
+      customers: [],
+      suppliers: [],
       units: JSON.parse(JSON.stringify(INITIAL_UNITS)),
       stockMovements: [],
       stockOpnames: [],
       posTransactions: [],
       purchaseOrders: [],
       purchaseInvoices: [],
-      sphQuotations: JSON.parse(JSON.stringify(INITIAL_SPH)),
-      salesOrders: JSON.parse(JSON.stringify(INITIAL_SALES_ORDERS)),
-      salesInvoices: JSON.parse(JSON.stringify(INITIAL_INVOICES)),
+      sphQuotations: [],
+      salesOrders: [],
+      salesInvoices: [],
       spkContracts: [],
-      deliveryOrders: JSON.parse(JSON.stringify(INITIAL_DELIVERY_ORDERS)),
+      deliveryOrders: [],
       bankAccounts: JSON.parse(JSON.stringify(INITIAL_BANKS)),
       cashRecords: [],
       journalEntries: [],
@@ -157,15 +161,66 @@ class Store {
           timestamp: new Date().toISOString(),
           userName: 'System Admin',
           userRole: 'owner',
-          action: 'SISTEM_DIMULAI',
+          action: 'DATABASE_BERSIH_DIMULAI',
           module: 'Core ERP',
-          details: 'Sistem POS + ERP PT Nirwana Jaya Nugraha siap digunakan secara operasional nyata.'
+          details: 'Sistem POS + ERP PT Nirwana Jaya Nugraha siap digunakan secara operasional kerja bersih tanpa dummy data.'
         }
       ],
       companySettings: INITIAL_COMPANY_SETTINGS,
-      targetAmount: 150000000,
+      targetAmount: 0,
       currentUser: DEFAULT_USERS[0]
     };
+  }
+
+  /**
+   * Reset seluruh database ke nol tanpa dummy data
+   */
+  public resetAllDataToZero(): void {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('njn_pos_erp_operational_v3');
+      localStorage.removeItem('njn_pos_erp_operational_v2');
+      localStorage.removeItem('njn_pos_erp_operational_v1');
+    } catch (e) {
+      console.error('Error clearing localStorage:', e);
+    }
+
+    this.state = {
+      products: [],
+      customers: [],
+      suppliers: [],
+      units: JSON.parse(JSON.stringify(INITIAL_UNITS)),
+      stockMovements: [],
+      stockOpnames: [],
+      posTransactions: [],
+      purchaseOrders: [],
+      purchaseInvoices: [],
+      sphQuotations: [],
+      salesOrders: [],
+      salesInvoices: [],
+      spkContracts: [],
+      deliveryOrders: [],
+      bankAccounts: JSON.parse(JSON.stringify(INITIAL_BANKS)),
+      cashRecords: [],
+      journalEntries: [],
+      users: DEFAULT_USERS,
+      auditLogs: [
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          userName: this.state?.currentUser?.name || 'Owner',
+          userRole: this.state?.currentUser?.role || 'owner',
+          action: 'RESET_DATABASE_BERSIH',
+          module: 'Sistem',
+          details: 'Semua data dummy telah dihapus. Seluruh saldo di-nol-kan untuk operasional kerja nyata.'
+        }
+      ],
+      companySettings: INITIAL_COMPANY_SETTINGS,
+      targetAmount: 0,
+      currentUser: this.state?.currentUser || DEFAULT_USERS[0]
+    };
+
+    this.save();
   }
 
   public save(): void {

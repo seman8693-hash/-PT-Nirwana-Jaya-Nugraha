@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Minus, Check, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import { PosProduct } from '../types';
+import { ProductImage } from './ProductImage';
 
 interface RestockModalProps {
   product: PosProduct | null;
@@ -78,7 +79,18 @@ export const RestockModal: React.FC<RestockModalProps> = ({
               </span>
             </div>
 
-            <div className="font-black text-sm text-slate-900 leading-snug">{product.name}</div>
+            <div className="flex items-center gap-3">
+              <ProductImage
+                src={product.imageUrl}
+                alt={product.name}
+                category={product.category}
+                size="md"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="font-black text-sm text-slate-900 leading-snug">{product.name}</div>
+                <div className="text-[10px] font-mono text-slate-400">{product.sku} • {product.category}</div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200/80 text-xs">
               <div>

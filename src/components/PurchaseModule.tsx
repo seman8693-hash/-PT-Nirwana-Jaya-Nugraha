@@ -15,6 +15,7 @@ import {
 import { store } from '../store';
 import { PurchaseOrder, PurchaseInvoice, PosProduct, Supplier } from '../types';
 import { formatRupiah, formatDate } from '../utils/format';
+import { ProductImage } from './ProductImage';
 
 interface PurchaseModuleProps {
   onPrintPurchase: (nota: any) => void;
@@ -498,11 +499,22 @@ export const PurchaseModule: React.FC<PurchaseModuleProps> = ({
 
                 {poForm.items.map((it, idx) => (
                   <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-                    <div className="col-span-6">
+                    <div className="col-span-6 flex items-center gap-2">
+                      {(() => {
+                        const prod = products.find(p => p.id === it.productId);
+                        return (
+                          <ProductImage
+                            src={prod?.imageUrl}
+                            alt={prod?.name || ''}
+                            category={prod?.category}
+                            size="xs"
+                          />
+                        );
+                      })()}
                       <select
                         value={it.productId}
                         onChange={e => handlePoItemChange(idx, 'productId', e.target.value)}
-                        className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
+                        className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
                       >
                         {products.map(p => (
                           <option key={p.id} value={p.id}>
