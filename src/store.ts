@@ -35,8 +35,30 @@ import {
   generateRealMonthlyTrends
 } from './data/mockData';
 import { calculateSmartRestockMetrics } from './utils/format';
+import { markDirty, flush } from './api/sync';
 
 const STORAGE_KEY = 'njn_pos_erp_clean_work_v4';
+
+/** Koleksi yang ikut dikirim ke D1. */
+const SYNCED_COLLECTIONS = [
+  'products', 'customers', 'suppliers', 'units', 'stockMovements', 'stockOpnames',
+  'posTransactions', 'purchaseOrders', 'purchaseInvoices', 'sphQuotations',
+  'salesOrders', 'salesInvoices', 'spkContracts', 'deliveryOrders',
+  'bankAccounts', 'cashRecords', 'journalEntries', 'companySettings',
+] as const;
+
+/** Sinkronisasi hanya aktif setelah login berhasil. */
+let syncEnabled = false;
+
+/** Hash string sederhana (FNV-1a 32-bit) untuk sidik jari koleksi. */
+function hash(input: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36) + ':' + input.length;
+}
 
 export interface AppState {
   products: PosProduct[];
@@ -230,6 +252,48 @@ class Store {
     } catch (e) {
       console.error('Gagal menyimpan state:', e);
     }
+    // Kirim ke D1 di latar belakang (debounce di sync.ts).
+    this.scheduleSync();
+  }
+
+  private scheduleSync(): void {
+    // Deteksi perubahan otomatis lewat sidik jari tiap koleksi, sehingga
+    // semua method mutasi ikut tersinkron tanpa perlu dioleh satu per satu.
+    const changed: string[] = [];
+
+    for (const key of SYNCED_COLLECTIONS) {
+      const signature = hash(JSON.stringify((this.state as any)[key] ?? null));
+      if (this.fingerprints[key] !== signature) {
+        this.fingerprints[key] = signature;
+        changed.push(key);
+      }
+    }
+
+    if (changed.length === 0) return;
+    if (!syncEnabled) return;
+
+    for (const name of changed) markDirty(name);
+    void flush(this.state);
+  }
+
+  /** Sidik jari terakhir tiap koleksi. */
+  private fingerprints: Record<string, string> = {};
+
+  /** Aktifkan setelah login berhasil; sebelum itu hanya localStorage. */
+  public setSyncEnabled(on: boolean): void {
+    syncEnabled = on;
+    this.fingerprints = {};
+    this.scheduleSync(); // kirim seluruh state sebagai seed saat pertama aktif
+  }
+
+  /** Gabungkan data dari server ke state lokal. */
+  public hydrateState(partial: Partial<AppState>): void {
+    this.state = { ...this.state, ...partial } as AppState;
+    this.save();
+  }
+
+  public getState(): AppState {
+    return this.state;
   }
 
   public subscribe(listener: () => void): () => void {
