@@ -3,4 +3,5 @@ node_modules/
 *.fixbak 
 dist/
 .wrangler/
+.eman-launch.json
 
