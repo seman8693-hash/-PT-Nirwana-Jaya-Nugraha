@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { LogIn, ShieldAlert, RefreshCw, CheckCircle2, WifiOff, Loader2 } from 'lucide-react';
+import { LogIn, ShieldAlert, RefreshCw, CheckCircle2, WifiOff, Loader2, KeyRound } from 'lucide-react';
 import { api, ApiError, isLoggedIn, setToken } from '../api/client';
 import type { SessionUser } from '../api/client';
 import { hydrate, onSyncStatus } from '../api/sync';
@@ -32,6 +32,19 @@ export const LoginGate: React.FC<{ children: React.ReactNode }> = ({ children })
   const [error, setError] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const [notice, setNotice] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [license, setLicense] = useState<{ expiresAt: string; daysLeft: number; expired: boolean } | null>(null);
+  const [newExpiry, setNewExpiry] = useState('');
+  const [extendBusy, setExtendBusy] = useState(false);
+
+  // Status lisensi ditampilkan publik, termasuk saat sudah keluar.
+  const loadLicense = useCallback(() => {
+    api.license()
+      .then(l => { setLicense(l); setNewExpiry(prev => prev || l.expiresAt); })
+      .catch(() => setLicense(null));
+  }, []);
+
+  useEffect(() => { loadLicense(); }, [loadLicense]);
 
   // Cek sesi yang sudah tersimpan saat aplikasi dibuka.
   useEffect(() => {
@@ -84,6 +97,28 @@ export const LoginGate: React.FC<{ children: React.ReactNode }> = ({ children })
       setBusy(false);
     }
   }, [username, pin]);
+
+  /** Owner memperpanjang lisensi tanpa harus punya sesi login. */
+  const handleExtend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    if (!username.trim() || !pin || !/^\d{4}-\d{2}-\d{2}$/.test(newExpiry)) {
+      setError('Username, PIN, dan tanggal (YYYY-MM-DD) wajib diisi.');
+      return;
+    }
+    setExtendBusy(true);
+    try {
+      const res = await api.extendLicense(username.trim(), pin, newExpiry);
+      setSuccess(res.message);
+      setPin('');
+      loadLicense();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Gagal memperpanjang lisensi.');
+    } finally {
+      setExtendBusy(false);
+    }
+  };
 if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100">
@@ -93,6 +128,57 @@ if (!ready) {
   }
 
   if (!user) {
+    // Layar terkunci: lisensi habis.
+    if (license?.expired) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-rose-100 text-rose-600 mb-4">
+              <ShieldAlert size={30} />
+            </div>
+            <h1 className="text-lg font-black text-slate-900">Masa Lisensi Berakhir</h1>
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+              Aplikasi tidak dapat digunakan lagi setelah
+              <span className="font-bold text-slate-700"> {license.expiresAt}</span>.
+              Hubungi pemilik untuk perpanjangan lisensi.
+            </p>
+
+            <form onSubmit={handleExtend} className="mt-6 space-y-3 text-left">
+              <p className="text-[11px] font-black text-slate-700 uppercase tracking-wide">
+                Perpanjangan oleh Owner
+              </p>
+              <input value={username} onChange={e => setUsername(e.target.value)}
+                placeholder="Username owner" autoComplete="username"
+                className="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <input type="password" value={pin} onChange={e => setPin(e.target.value)}
+                placeholder="PIN" inputMode="numeric" autoComplete="current-password"
+                className="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm tracking-[0.3em] focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <input value={newExpiry} onChange={e => setNewExpiry(e.target.value)}
+                placeholder="YYYY-MM-DD"
+                className="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500" />
+
+              {error && (
+                <div className="flex items-start gap-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                  <ShieldAlert size={14} className="shrink-0 mt-0.5" /><span>{error}</span>
+                </div>
+              )}
+              {success && (
+                <div className="flex items-start gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                  <CheckCircle2 size={14} className="shrink-0 mt-0.5" /><span>{success}</span>
+                </div>
+              )}
+
+              <button type="submit" disabled={extendBusy}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-slate-900 text-amber-400 font-black text-xs hover:bg-slate-800 disabled:opacity-60">
+                {extendBusy ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
+                {extendBusy ? 'Memproses...' : 'Perpanjang Lisensi'}
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
         <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8">
@@ -146,7 +232,15 @@ if (!ready) {
             </button>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-slate-200">
+          <div className="mt-6 pt-4 border-t border-slate-200 space-y-2">
+            {license && !license.expired && (
+              <p className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-md ${
+                license.daysLeft <= 3 ? 'bg-amber-50 text-amber-800' : 'bg-slate-50 text-slate-600'
+              }`}>
+                Berlaku s.d. {license.expiresAt}
+                {license.daysLeft >= 0 && ` - sisa ${license.daysLeft} hari`}
+              </p>
+            )}
             <p className="text-[11px] text-slate-500 leading-relaxed">
               Data disimpan di database Cloudflare D1, bukan hanya di browser.
               PIN awal: <span className="font-mono font-bold">direktur/1234</span>,

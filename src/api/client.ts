@@ -112,6 +112,14 @@ export interface SessionUser {
 }
 
 export const api = {
+  license: () => request<{ ok: boolean; expiresAt: string; daysLeft: number; expired: boolean }>(
+    '/license', { auth: false }),
+
+  extendLicense: (username: string, pin: string, expiresAt: string) =>
+    request<{ ok: boolean; expiresAt: string; message: string }>('/license/extend', {
+      method: 'POST', body: { username, pin, expiresAt }, auth: false,
+    }),
+
   health: () => request<{ ok: boolean }>('/health', { auth: false }),
 
   login: (username: string, pin: string) =>

@@ -344,6 +344,75 @@ async function handleResetPin(env: Env, req: Request, session: Session, targetId
   return json({ ok: true, message: `PIN ${target.username} berhasil di-reset.` });
 }
 
+/**
+ * Cek lisensi. Setelah tanggal berakhir, tidak ada lagi yang bisa login
+ * dan seluruh akses API ditolak.
+ *
+ * Perbandingan dilakukan per hari (YYYY-MM-DD dihitung di UTC) supaya
+ * aplikasi tetap bisa dipakai sampai penghujung hari terakhir.
+ */
+async function getLicense(env: Env): Promise<{ expiresAt: string; expired: boolean; daysLeft: number }> {
+  const row = await env.DB.prepare(
+    'SELECT expires_at FROM license_config WHERE id = ?'
+  ).bind('main').first<{ expires_at: string }>();
+
+  const expiresAt = row?.expires_at ?? '1970-01-01';
+
+  // Kedaluwarsa mulai 00:00 UTC hari SESUDAH tanggal berakhir.
+  const deadline = new Date(`${expiresAt}T00:00:00Z`).getTime();
+  const expired = Date.now() >= deadline;
+
+  const daysLeft = Math.ceil((deadline - Date.now()) / 86_400_000);
+
+  return { expiresAt, expired, daysLeft, };
+}
+
+/** Dipanggil owner untuk memperpanjang, tanpa perlu sesi login. */
+async function handleLicenseExtend(env: Env, req: Request) {
+  const body = await readJson(req);
+  const username = String(body.username ?? '').trim();
+  const pin = String(body.pin ?? '');
+  const newExpiresAt = String(body.expiresAt ?? '').trim();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(newExpiresAt)) {
+    return fail('Format tanggal harus YYYY-MM-DD', 400);
+  }
+
+  const user = await env.DB.prepare(
+    'SELECT id, role, pin_hash, pin_salt, active FROM app_users WHERE username = ?'
+  ).bind(username).first<{
+    id: string; role: string; pin_hash: string | null; pin_salt: string | null; active: number;
+  }>();
+
+  // Verifikasi kredensial owner tanpa membuka sesi baru.
+  if (!user || user.active !== 1 || user.role !== 'owner') {
+    return fail('Hanya akun owner yang dapat memperpanjang lisensi', 403);
+  }
+  if (!user.pin_hash || !user.pin_salt) return fail('Akun owner belum memiliki PIN', 409);
+  if (!(await verifyPin(pin, user.pin_salt, user.pin_hash))) {
+    return fail('PIN salah', 401);
+  }
+
+  await env.DB.prepare(
+    'UPDATE license_config SET expires_at = ?, updated_at = ? WHERE id = ?'
+  ).bind(newExpiresAt, nowIso(), 'main').run();
+
+  await env.DB.prepare(
+    `INSERT INTO audit_logs
+     (id, timestamp, user_name, user_id, user_role, action, module, details, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?)`
+  ).bind(
+    `aud-${crypto.randomUUID()}`, nowIso(), username, user.id, 'owner',
+    'EXTEND_LICENSE', 'Lisensi',
+    `Lisensi diperpanjang sampai ${newExpiresAt} oleh ${username}`, nowIso()
+  ).run();
+
+  return json({ ok: true, expiresAt: newExpiresAt, message: `Lisensi aktif sampai ${newExpiresAt}.` });
+}
+
+const LICENSE_BLOCK_MESSAGE =
+  'Masa penggunaan aplikasi telah berakhir. Silakan hubungi pemilik untuk perpanjangan lisensi.';
+
 /* ------------------------------------------------------------------ *
  * Router
  * ------------------------------------------------------------------ */
@@ -352,6 +421,29 @@ async function handleApi(env: Env, req: Request, url: URL): Promise<Response> {
   const path = url.pathname.replace(/^\/api\/?/, '').replace(/\/$/, '');
 
   if (path === 'health') return json({ ok: true, service: 'njn-pos-api' });
+
+  // Status lisensi - publik, supaya layar login bisa menampilkannya.
+  if (path === 'license' && req.method === 'GET') {
+    const lic = await getLicense(env);
+    return json({ ok: true, expiresAt: lic.expiresAt, daysLeft: lic.daysLeft, expired: lic.expired });
+  }
+
+  // Perpanjangan oleh owner (butuh kredensial, tidak membuka sesi).
+  if (path === 'license/extend' && req.method === 'POST') {
+    return handleLicenseExtend(env, req);
+  }
+
+  // Gerbang lisensi: setelah masa penggunaan berakhir, semua akses ditolak.
+  const license = await getLicense(env);
+  if (license.expired) {
+    return json({
+      ok: false,
+      error: LICENSE_BLOCK_MESSAGE,
+      code: 'LICENSE_EXPIRED',
+      expiresAt: license.expiresAt,
+    }, 403);
+  }
+
   if (path === 'auth/login' && req.method === 'POST') return handleLogin(env, req);
 
   const session = await requireSession(env, req);
