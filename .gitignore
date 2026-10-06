@@ -4,4 +4,6 @@ node_modules/
 dist/
 .wrangler/
 .eman-launch.json
+.dev.vars
+dev-server.log
 

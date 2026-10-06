@@ -1,13 +1,23 @@
 // Konfigurasi deploy: Cloudflare Workers + Static Assets (hasil vite build).
 // Build menghasilkan dist/, lalu `npx wrangler deploy` menyajikan dist/.
+// Worker `src/worker/index.ts` menangani /api/*; aset statis dilayani via binding ASSETS.
 {
-  "name": "toko-nirwana-jaya-nugraha",
+  "name": "pt-nirwana-jaya-nugraha",
+  "main": "src/worker/index.ts",
   "compatibility_date": "2026-10-03",
   "workers_dev": true,
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "njn_pos_db",
+      "database_id": "d54cf73c-67fb-4873-8ab1-5d4d53af8cbc"
+    }
+  ],
   "observability": {
     "enabled": true
   }

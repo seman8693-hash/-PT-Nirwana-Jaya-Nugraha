@@ -186,7 +186,7 @@ if (!ready) {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-900 text-amber-400 font-black text-xl mb-3">
               NJN
             </div>
-            <h1 className="text-lg font-black text-slate-900">PT. Nirwana Jaya Nugraha</h1>
+            <h1 className="text-lg font-black text-slate-900">Toko Nirwana Jaya Nugraha</h1>
             <p className="text-xs text-slate-500 mt-1">Sistem Operasional Kios &amp; ERP</p>
           </div>
 
