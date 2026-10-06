@@ -175,10 +175,10 @@ export const NjnLogo: React.FC<NjnLogoProps> = ({
         {renderMedallion(iconDimensions)}
         <div>
           <div className="text-xs font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 font-serif">
-            NJN GOLD
+            NJN
           </div>
           <div className="text-[9px] font-semibold text-slate-300 uppercase tracking-widest leading-none">
-            PT NIRWANA JAYA NUGRAHA
+            TOKO NIRWANA JAYA NUGRAHA
           </div>
         </div>
       </div>
@@ -191,10 +191,10 @@ export const NjnLogo: React.FC<NjnLogoProps> = ({
         {renderMedallion(52)}
         <div>
           <div className="text-xl font-black tracking-wide text-slate-900 font-serif">
-            PT. NIRWANA JAYA NUGRAHA
+            TOKO NIRWANA JAYA NUGRAHA
           </div>
           <div className="text-xs font-bold text-amber-700 tracking-wider uppercase">
-            NJN GOLD • ELECTRICAL & PANEL DISTRIBUSI
+            NJN • ELECTRICAL & PANEL DISTRIBUSI
           </div>
           <div className="text-[10px] text-slate-500 mt-0.5 leading-tight">
             Jl. Soekarno Hatta No. 488, Batununggal, Bandung | Telp: (022) 731-8921 | Email: operasional@nirwanajaya.co.id
@@ -207,7 +207,7 @@ export const NjnLogo: React.FC<NjnLogoProps> = ({
   if (variant === 'full') {
     return (
       <div className={`bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-6 rounded-3xl border border-amber-500/30 text-center shadow-2xl relative overflow-hidden flex flex-col items-center ${className}`}>
-        {/* Gold Corner Accents */}
+        {/* Corner Accents */}
         <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-amber-400/80" />
         <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-amber-400/80" />
         <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-amber-400/80" />
@@ -216,9 +216,9 @@ export const NjnLogo: React.FC<NjnLogoProps> = ({
         {/* Center Medallion */}
         <div className="my-2">{renderMedallion(110)}</div>
 
-        {/* NJN GOLD Title with luminous glow */}
+        {/* NJN Title with luminous glow */}
         <h1 className="text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 font-serif drop-shadow-[0_2px_8px_rgba(245,208,97,0.4)] mt-2">
-          NJN GOLD
+          NJN
         </h1>
 
         {/* Premium Enterprise Pill */}
@@ -226,9 +226,9 @@ export const NjnLogo: React.FC<NjnLogoProps> = ({
           PREMIUM ENTERPRISE
         </div>
 
-        {/* PT Nirwana Jaya Nugraha */}
+        {/* TOKO Nirwana Jaya Nugraha */}
         <h2 className="text-xs font-bold text-slate-200 tracking-widest uppercase mt-3">
-          PT NIRWANA JAYA NUGRAHA
+          TOKO NIRWANA JAYA NUGRAHA
         </h2>
 
         {/* Categories Bar */}
@@ -245,10 +245,10 @@ export const NjnLogo: React.FC<NjnLogoProps> = ({
       {renderMedallion(iconDimensions)}
       <div className="min-w-0">
         <div className="text-sm font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 font-serif truncate leading-tight">
-          NJN GOLD
+          NJN
         </div>
         <div className="text-[11px] font-bold text-white tracking-wide truncate leading-tight mt-0.5">
-          PT. NIRWANA JAYA NUGRAHA
+          TOKO NIRWANA JAYA NUGRAHA
         </div>
         <div className="text-[9px] font-semibold text-amber-400/90 tracking-widest uppercase truncate leading-none mt-0.5">
           ELECTRICAL & PANEL DISTRIBUTOR

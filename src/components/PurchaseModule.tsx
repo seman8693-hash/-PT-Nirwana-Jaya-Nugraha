@@ -385,7 +385,7 @@ export const PurchaseModule: React.FC<PurchaseModuleProps> = ({
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
               <h3 className="text-base font-black text-slate-900">Buku Hutang Dagang Supplier & Jatuh Tempo</h3>
-              <p className="text-xs text-slate-500">Daftar tagihan supplier yang belum dilunasi oleh PT Nirwana Jaya Nugraha.</p>
+              <p className="text-xs text-slate-500">Daftar tagihan supplier yang belum dilunasi oleh Toko Nirwana Jaya Nugraha.</p>
             </div>
             <div className="text-right">
               <span className="text-xs text-slate-500 block">Total Hutang Berjalan:</span>
@@ -625,7 +625,7 @@ export const PurchaseModule: React.FC<PurchaseModuleProps> = ({
                 onChange={e => setPayBankMethod(e.target.value)}
                 className="w-full px-3 py-2 border rounded-xl font-semibold"
               >
-                <option value="Bank BCA">Bank BCA PT Nirwana Jaya Nugraha</option>
+                <option value="Bank BCA">Bank BCA Toko Nirwana Jaya Nugraha</option>
                 <option value="Bank Mandiri">Bank Mandiri Operasional</option>
                 <option value="Kas Tunai">Kas Tunai Toko / Brankas</option>
               </select>

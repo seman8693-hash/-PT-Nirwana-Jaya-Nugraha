@@ -68,7 +68,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
     email: '',
     address: '',
     type: 'kontraktor' as 'retail' | 'kontraktor' | 'grosir',
-    creditLimit: 50000000,
+    creditLimit: 0,
     notes: ''
   });
 
@@ -120,18 +120,18 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
       barcode: `8990${Date.now().toString().slice(-7)}`,
       name: '',
       category: 'Kabel Power',
-      brand: 'Supreme Cable',
-      unit: 'Meter',
+      brand: '',
+      unit: 'Pcs',
       imageUrl: '',
-      stock: 10,
-      minStock: 10,
-      hppPrice: 50000,
-      price: 65000,
-      priceWholesale: 60000,
-      priceProject: 57000,
-      rackLocation: 'Gudang Utama A-01',
+      stock: 0,
+      minStock: 5,
+      hppPrice: 0,
+      price: 0,
+      priceWholesale: 0,
+      priceProject: 0,
+      rackLocation: 'Gudang Utama',
       specification: '',
-      monthlyAvgSales: 20,
+      monthlyAvgSales: 0,
       leadTimeDays: 7
     });
     setIsProductModalOpen(true);

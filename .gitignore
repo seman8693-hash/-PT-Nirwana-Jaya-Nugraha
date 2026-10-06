@@ -5,4 +5,3 @@ dist/
 .wrangler/
 .eman-launch.json
 
-bun.lock

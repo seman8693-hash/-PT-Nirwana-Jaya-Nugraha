@@ -19,7 +19,8 @@ import {
   AppUser,
   AuditLog,
   CompanySettings,
-  MonthlySalesTrend
+  MonthlySalesTrend,
+  LicenseInfo
 } from './types';
 import {
   INITIAL_PRODUCTS,
@@ -35,30 +36,25 @@ import {
   generateRealMonthlyTrends
 } from './data/mockData';
 import { calculateSmartRestockMetrics } from './utils/format';
-import { markDirty, flush } from './api/sync';
+import {
+  calculateDaysRemaining,
+  addDaysToDate,
+  generateLicenseKey
+} from './utils/licenseUtils';
 
 const STORAGE_KEY = 'njn_pos_erp_clean_work_v4';
 
-/** Koleksi yang ikut dikirim ke D1. */
-const SYNCED_COLLECTIONS = [
-  'products', 'customers', 'suppliers', 'units', 'stockMovements', 'stockOpnames',
-  'posTransactions', 'purchaseOrders', 'purchaseInvoices', 'sphQuotations',
-  'salesOrders', 'salesInvoices', 'spkContracts', 'deliveryOrders',
-  'bankAccounts', 'cashRecords', 'journalEntries', 'companySettings',
-] as const;
-
-/** Sinkronisasi hanya aktif setelah login berhasil. */
-let syncEnabled = false;
-
-/** Hash string sederhana (FNV-1a 32-bit) untuk sidik jari koleksi. */
-function hash(input: string): string {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return (h >>> 0).toString(36) + ':' + input.length;
-}
+export const INITIAL_LICENSE: LicenseInfo = {
+  validUntil: '2026-10-10',
+  licenseKey: 'NJN-ERP-2026-RR-9042',
+  planType: 'Lisensi Operasional Kios & ERP Toko Resmi',
+  licensedTo: 'TOKO NIRWANA JAYA NUGRAHA',
+  ownerName: 'Rudi Ruhdiana',
+  autoRenew: true,
+  activationDate: '2026-01-01',
+  lastExtendedDate: '2026-10-06',
+  notes: 'Lisensi Resmi Toko Nirwana Jaya Nugraha'
+};
 
 export interface AppState {
   products: PosProduct[];
@@ -83,14 +79,15 @@ export interface AppState {
   companySettings: CompanySettings;
   targetAmount: number;
   currentUser: AppUser;
+  licenseInfo: LicenseInfo;
 }
 
 const DEFAULT_USERS: AppUser[] = [
-  { id: 'usr-1', username: 'direktur', name: 'H. Asep Supriatna, S.T.', role: 'owner', active: true },
-  { id: 'usr-2', username: 'kasir1', name: 'Siti Rahmawati', role: 'kasir', active: true },
-  { id: 'usr-3', username: 'gudang1', name: 'Dedi Kurniawan', role: 'gudang', active: true },
-  { id: 'usr-4', username: 'keuangan1', name: 'Rina Marlina, S.E.', role: 'keuangan', active: true },
-  { id: 'usr-5', username: 'sales1', name: 'Fikri Ramadhan', role: 'sales', active: true }
+  { id: 'usr-1', username: 'direktur', name: 'Rudi Ruhdiana', role: 'owner', pin: '1234', active: true },
+  { id: 'usr-2', username: 'kasir1', name: 'Siti Rahmawati', role: 'kasir', pin: '1234', active: true },
+  { id: 'usr-3', username: 'gudang1', name: 'Dedi Kurniawan', role: 'gudang', pin: '1234', active: true },
+  { id: 'usr-4', username: 'keuangan1', name: 'Rina Marlina, S.E.', role: 'keuangan', pin: '1234', active: true },
+  { id: 'usr-5', username: 'sales1', name: 'Fikri Ramadhan', role: 'sales', pin: '1234', active: true }
 ];
 
 class Store {
@@ -134,10 +131,25 @@ class Store {
           salesInvoices: Array.isArray(parsed.salesInvoices) ? parsed.salesInvoices : [],
           spkContracts: Array.isArray(parsed.spkContracts) ? parsed.spkContracts : [],
           deliveryOrders: Array.isArray(parsed.deliveryOrders) ? parsed.deliveryOrders : [],
-          bankAccounts: (Array.isArray(parsed.bankAccounts) && parsed.bankAccounts.length > 0) ? parsed.bankAccounts : JSON.parse(JSON.stringify(INITIAL_BANKS)),
+          bankAccounts: (Array.isArray(parsed.bankAccounts) && parsed.bankAccounts.length > 0)
+            ? parsed.bankAccounts.map((b: any) => ({
+                ...b,
+                holderName: b.holderName ? b.holderName.replace(/PT\.?\s*NIRWANA JAYA NUGRAHA/gi, 'TOKO NIRWANA JAYA NUGRAHA').replace(/PT Nirwana Jaya Nugraha/gi, 'Toko Nirwana Jaya Nugraha') : b.holderName
+              }))
+            : JSON.parse(JSON.stringify(INITIAL_BANKS)),
           cashRecords: Array.isArray(parsed.cashRecords) ? parsed.cashRecords : [],
           journalEntries: Array.isArray(parsed.journalEntries) ? parsed.journalEntries : [],
-          users: (Array.isArray(parsed.users) && parsed.users.length > 0) ? parsed.users : DEFAULT_USERS,
+          users: (Array.isArray(parsed.users) && parsed.users.length > 0)
+            ? parsed.users.map((u: AppUser) => {
+                const isOwner = u.role === 'owner' || u.name.includes('Asep') || u.username === 'direktur' || u.username === 'owner';
+                return {
+                  ...u,
+                  pin: u.pin || '1234',
+                  name: isOwner ? 'Rudi Ruhdiana' : u.name,
+                  username: isOwner ? (u.username || 'direktur') : u.username
+                };
+              })
+            : DEFAULT_USERS,
           auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [
             {
               id: 'log-init',
@@ -146,12 +158,34 @@ class Store {
               userRole: 'owner',
               action: 'DATABASE_BERSIH_DIMULAI',
               module: 'Core ERP',
-              details: 'Sistem POS + ERP PT Nirwana Jaya Nugraha siap digunakan secara operasional kerja bersih tanpa dummy data.'
+              details: 'Sistem POS + ERP Toko Nirwana Jaya Nugraha siap digunakan secara operasional kerja bersih tanpa dummy data.'
             }
           ],
-          companySettings: parsed.companySettings || INITIAL_COMPANY_SETTINGS,
+          companySettings: parsed.companySettings ? {
+            ...parsed.companySettings,
+            companyName: (parsed.companySettings.companyName || '').replace(/PT\.?\s*NIRWANA JAYA NUGRAHA/gi, 'TOKO NIRWANA JAYA NUGRAHA') || INITIAL_COMPANY_SETTINGS.companyName
+          } : INITIAL_COMPANY_SETTINGS,
           targetAmount: typeof parsed.targetAmount === 'number' ? parsed.targetAmount : 0,
-          currentUser: parsed.currentUser || DEFAULT_USERS[0]
+          currentUser: parsed.currentUser
+            ? (parsed.currentUser.role === 'owner' || (parsed.currentUser.name && parsed.currentUser.name.includes('Asep'))
+                ? { ...parsed.currentUser, name: 'Rudi Ruhdiana', pin: parsed.currentUser.pin || '1234' }
+                : { ...parsed.currentUser, pin: parsed.currentUser.pin || '1234' })
+            : DEFAULT_USERS[0],
+          licenseInfo: (() => {
+            const lic: LicenseInfo = parsed.licenseInfo ? {
+              ...INITIAL_LICENSE,
+              ...parsed.licenseInfo,
+              licensedTo: (parsed.licenseInfo.licensedTo || 'TOKO NIRWANA JAYA NUGRAHA').replace(/PT\.?\s*NIRWANA JAYA NUGRAHA/gi, 'TOKO NIRWANA JAYA NUGRAHA'),
+              ownerName: parsed.licenseInfo.ownerName && parsed.licenseInfo.ownerName.includes('Asep') ? 'Rudi Ruhdiana' : (parsed.licenseInfo.ownerName || 'Rudi Ruhdiana')
+            } : JSON.parse(JSON.stringify(INITIAL_LICENSE));
+
+            // Auto-Renew check: perpanjangan otomatis jika aktif dan hari habis
+            if (lic.autoRenew && calculateDaysRemaining(lic.validUntil) <= 0) {
+              lic.validUntil = addDaysToDate(lic.validUntil, 30);
+              lic.lastExtendedDate = new Date().toISOString().split('T')[0];
+            }
+            return lic;
+          })()
         };
       }
     } catch (e) {
@@ -185,12 +219,13 @@ class Store {
           userRole: 'owner',
           action: 'DATABASE_BERSIH_DIMULAI',
           module: 'Core ERP',
-          details: 'Sistem POS + ERP PT Nirwana Jaya Nugraha siap digunakan secara operasional kerja bersih tanpa dummy data.'
+          details: 'Sistem POS + ERP Toko Nirwana Jaya Nugraha siap digunakan secara operasional kerja bersih tanpa dummy data.'
         }
       ],
       companySettings: INITIAL_COMPANY_SETTINGS,
       targetAmount: 0,
-      currentUser: DEFAULT_USERS[0]
+      currentUser: DEFAULT_USERS[0],
+      licenseInfo: JSON.parse(JSON.stringify(INITIAL_LICENSE))
     };
   }
 
@@ -239,7 +274,8 @@ class Store {
       ],
       companySettings: INITIAL_COMPANY_SETTINGS,
       targetAmount: 0,
-      currentUser: this.state?.currentUser || DEFAULT_USERS[0]
+      currentUser: this.state?.currentUser || DEFAULT_USERS[0],
+      licenseInfo: this.state?.licenseInfo || JSON.parse(JSON.stringify(INITIAL_LICENSE))
     };
 
     this.save();
@@ -252,48 +288,6 @@ class Store {
     } catch (e) {
       console.error('Gagal menyimpan state:', e);
     }
-    // Kirim ke D1 di latar belakang (debounce di sync.ts).
-    this.scheduleSync();
-  }
-
-  private scheduleSync(): void {
-    // Deteksi perubahan otomatis lewat sidik jari tiap koleksi, sehingga
-    // semua method mutasi ikut tersinkron tanpa perlu dioleh satu per satu.
-    const changed: string[] = [];
-
-    for (const key of SYNCED_COLLECTIONS) {
-      const signature = hash(JSON.stringify((this.state as any)[key] ?? null));
-      if (this.fingerprints[key] !== signature) {
-        this.fingerprints[key] = signature;
-        changed.push(key);
-      }
-    }
-
-    if (changed.length === 0) return;
-    if (!syncEnabled) return;
-
-    for (const name of changed) markDirty(name);
-    void flush(this.state);
-  }
-
-  /** Sidik jari terakhir tiap koleksi. */
-  private fingerprints: Record<string, string> = {};
-
-  /** Aktifkan setelah login berhasil; sebelum itu hanya localStorage. */
-  public setSyncEnabled(on: boolean): void {
-    syncEnabled = on;
-    this.fingerprints = {};
-    this.scheduleSync(); // kirim seluruh state sebagai seed saat pertama aktif
-  }
-
-  /** Gabungkan data dari server ke state lokal. */
-  public hydrateState(partial: Partial<AppState>): void {
-    this.state = { ...this.state, ...partial } as AppState;
-    this.save();
-  }
-
-  public getState(): AppState {
-    return this.state;
   }
 
   public subscribe(listener: () => void): () => void {
@@ -339,14 +333,134 @@ class Store {
     this.save();
   }
 
-  public addUser(user: Omit<AppUser, 'id'>): void {
+  public addUser(user: Omit<AppUser, 'id'> & { pin?: string }): AppUser {
     const newUser: AppUser = {
       ...user,
-      id: `usr-${Date.now()}`
+      id: `usr-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+      pin: user.pin || '1234',
+      active: user.active ?? true
     };
     this.state.users.push(newUser);
-    this.addAuditLog('User & Akses', 'TAMBAH_USER', `Menambahkan pengguna baru: ${user.name} sebagai ${user.role}`);
+    this.addAuditLog('User & Akses', 'TAMBAH_USER', `Menambahkan pengguna baru: ${user.name} (${user.username}) sebagai ${user.role}`);
     this.save();
+    return newUser;
+  }
+
+  public updateUser(id: string, updates: Partial<AppUser>): void {
+    const index = this.state.users.findIndex(u => u.id === id);
+    if (index !== -1) {
+      this.state.users[index] = { ...this.state.users[index], ...updates };
+      this.addAuditLog('User & Akses', 'UBAH_USER', `Memperbarui akun pengguna: ${this.state.users[index].name}`);
+      this.save();
+    }
+  }
+
+  public deleteUser(id: string): void {
+    if (this.state.users.length <= 1) return; // Prevent deleting last user
+    const user = this.state.users.find(u => u.id === id);
+    if (user) {
+      this.state.users = this.state.users.filter(u => u.id !== id);
+      this.addAuditLog('User & Akses', 'HAPUS_USER', `Menghapus akun: ${user.name} (${user.username})`);
+      this.save();
+    }
+  }
+
+  public generateAutoUser(role: AppUser['role'], customName?: string): AppUser {
+    const roleLabels: Record<AppUser['role'], { prefix: string; defaultName: string }> = {
+      owner: { prefix: 'direktur', defaultName: 'Rudi Ruhdiana' },
+      kasir: { prefix: 'kasir', defaultName: 'Kasir Standar' },
+      gudang: { prefix: 'gudang', defaultName: 'Staf Gudang' },
+      keuangan: { prefix: 'keuangan', defaultName: 'Staf Keuangan' },
+      sales: { prefix: 'sales', defaultName: 'Sales Eksekutif' }
+    };
+    const config = roleLabels[role] || { prefix: 'user', defaultName: 'Staf Operasional' };
+    const randNum = Math.floor(100 + Math.random() * 900);
+    const username = `${config.prefix}_${randNum}`;
+    const name = customName || `${config.defaultName} #${randNum}`;
+    const pin = String(Math.floor(1000 + Math.random() * 9000)); // 4 digit pin acak
+
+    return this.addUser({
+      username,
+      name,
+      role,
+      pin,
+      active: true
+    });
+  }
+
+  // 13. LISENSI & MASA BERLAKU SISTEM OPERASIONAL (MANUAL, OTOMATIS & TAMBAHKAN)
+  public getLicenseInfo(): LicenseInfo {
+    return this.state.licenseInfo;
+  }
+
+  public updateLicenseInfo(updates: Partial<LicenseInfo>): void {
+    this.state.licenseInfo = {
+      ...this.state.licenseInfo,
+      ...updates
+    };
+    this.addAuditLog('Lisensi & Sistem', 'UPDATE_LISENSI', `Pembaruan lisensi operasional Toko Nirwana Jaya Nugraha`);
+    this.save();
+  }
+
+  public addLicenseDays(days: number, reason: string = 'Perpanjangan Masa Aktif'): void {
+    const currentValidUntil = this.state.licenseInfo.validUntil || '2026-10-10';
+    const newDate = addDaysToDate(currentValidUntil, days);
+    this.state.licenseInfo = {
+      ...this.state.licenseInfo,
+      validUntil: newDate,
+      lastExtendedDate: new Date().toISOString().split('T')[0]
+    };
+    this.addAuditLog(
+      'Lisensi & Sistem',
+      'TAMBAH_MASA_AKTIF',
+      `Menambahkan masa berlaku +${days} hari (s.d. ${newDate}). Alasan: ${reason}`
+    );
+    this.save();
+  }
+
+  public setLicenseExpiryDate(newDate: string, reason: string = 'Pengaturan Tanggal Manual'): void {
+    this.state.licenseInfo = {
+      ...this.state.licenseInfo,
+      validUntil: newDate,
+      lastExtendedDate: new Date().toISOString().split('T')[0]
+    };
+    this.addAuditLog(
+      'Lisensi & Sistem',
+      'SET_TANGGAL_MANUAL',
+      `Masa berlaku diatur manual ke: ${newDate}. Alasan: ${reason}`
+    );
+    this.save();
+  }
+
+  public generateAutoLicense(daysToAdd: number = 365): LicenseInfo {
+    const newKey = generateLicenseKey('RR');
+    const newDate = addDaysToDate(this.state.licenseInfo.validUntil || '2026-10-10', daysToAdd);
+    this.state.licenseInfo = {
+      ...this.state.licenseInfo,
+      licenseKey: newKey,
+      validUntil: newDate,
+      lastExtendedDate: new Date().toISOString().split('T')[0],
+      activationDate: new Date().toISOString().split('T')[0]
+    };
+    this.addAuditLog(
+      'Lisensi & Sistem',
+      'GENERATE_LISENSI_OTOMATIS',
+      `Lisensi baru otomatis dibuat: ${newKey} (+${daysToAdd} hari s.d. ${newDate})`
+    );
+    this.save();
+    return this.state.licenseInfo;
+  }
+
+  public toggleAutoRenew(): boolean {
+    const current = !!this.state.licenseInfo.autoRenew;
+    this.state.licenseInfo.autoRenew = !current;
+    this.addAuditLog(
+      'Lisensi & Sistem',
+      'TOGGLE_AUTO_RENEW',
+      `Perpanjangan otomatis diubah menjadi: ${!current ? 'AKTIF' : 'NONAKTIF'}`
+    );
+    this.save();
+    return this.state.licenseInfo.autoRenew;
   }
 
   // 1. DASHBOARD & KPIS

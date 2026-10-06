@@ -57,7 +57,7 @@ export const QrisModal: React.FC<QrisModalProps> = ({
               </svg>
               <span className="font-mono font-bold mt-1 text-[9px] text-emerald-400">NMID: ID102030495819</span>
             </div>
-            <div className="text-[11px] font-extrabold text-slate-900 mt-2">PT. NIRWANA JAYA NUGRAHA</div>
+            <div className="text-[11px] font-extrabold text-slate-900 mt-2">TOKO NIRWANA JAYA NUGRAHA</div>
             <div className="text-[9px] text-slate-500">BCA, Mandiri, BRI, BNI, GoPay, OVO, DANA, ShopeePay</div>
           </div>
 

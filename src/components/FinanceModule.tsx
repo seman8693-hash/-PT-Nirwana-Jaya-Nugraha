@@ -686,7 +686,7 @@ export const FinanceModule: React.FC<FinanceModuleProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 max-w-2xl mx-auto space-y-4">
           <div className="text-center pb-4 border-b">
             <h3 className="text-lg font-black text-slate-900">Laporan Laba / Rugi Operasional</h3>
-            <p className="text-xs text-slate-500">PT. NIRWANA JAYA NUGRAHA (Tahun Berjalan 2026)</p>
+            <p className="text-xs text-slate-500">{store.getCompanySettings().companyName || 'TOKO NIRWANA JAYA NUGRAHA'} (Tahun Berjalan 2026)</p>
           </div>
 
           <div className="space-y-3 text-xs">
@@ -733,7 +733,7 @@ export const FinanceModule: React.FC<FinanceModuleProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 max-w-2xl mx-auto space-y-4">
           <div className="text-center pb-4 border-b">
             <h3 className="text-lg font-black text-slate-900">Laporan Arus Kas (Cash Flow)</h3>
-            <p className="text-xs text-slate-500">PT. NIRWANA JAYA NUGRAHA (Tahun Berjalan 2026)</p>
+            <p className="text-xs text-slate-500">{store.getCompanySettings().companyName || 'TOKO NIRWANA JAYA NUGRAHA'} (Tahun Berjalan 2026)</p>
           </div>
 
           <div className="space-y-3 text-xs">

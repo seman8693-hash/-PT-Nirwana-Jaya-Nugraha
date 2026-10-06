@@ -47,24 +47,24 @@ export const ShippingModule: React.FC<ShippingModuleProps> = ({
 
   // Manual DO Form State
   const [doForm, setDoForm] = useState({
-    invoiceReference: invoices[0]?.invoiceNumber || 'INV/NJN/2026/001',
-    customerName: customers[0]?.name || 'PT. Wijaya Rekayasa Mandiri',
-    destinationAddress: customers[0]?.address || 'Kawasan Industri Gedebage Blok D-12, Bandung',
-    driverName: 'Pak Dadang (Armada NJN)',
-    vehicleNumber: 'D 8841 AB (Colt Diesel)',
+    invoiceReference: invoices[0]?.invoiceNumber || '-',
+    customerName: customers[0]?.name || '',
+    destinationAddress: customers[0]?.address || '',
+    driverName: 'Armada Pengiriman NJN',
+    vehicleNumber: 'D 1234 XX',
     expedition: 'Armada Internal NJN',
     trackingNumber: `NJN-LOG-${Date.now().toString().slice(-6)}`,
     shippingDate: new Date().toISOString().split('T')[0],
     estimatedArrival: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0],
     items: [
-      { productName: 'Kabel Supreme NYY 4x16 mm²', qty: 50, unit: 'Meter' }
+      { productName: '', qty: 1, unit: 'Pcs' }
     ]
   });
 
   const handleAddItemRow = () => {
     setDoForm({
       ...doForm,
-      items: [...doForm.items, { productName: 'Box Panel Wall Mounting', qty: 2, unit: 'Unit' }]
+      items: [...doForm.items, { productName: '', qty: 1, unit: 'Pcs' }]
     });
   };
 
@@ -134,7 +134,7 @@ export const ShippingModule: React.FC<ShippingModuleProps> = ({
           </div>
           <h2 className="text-2xl font-black text-slate-900">Surat Jalan (DO), Resi & Keterkaitan Invoice</h2>
           <p className="text-xs text-slate-500 mt-1">
-            Penerbitan surat jalan resmi PT Nirwana Jaya Nugraha, penugasan armada driver, dan pemantauan status penerimaan barang proyek.
+            Penerbitan surat jalan resmi Toko Nirwana Jaya Nugraha, penugasan armada driver, dan pemantauan status penerimaan barang proyek.
           </p>
         </div>
 
