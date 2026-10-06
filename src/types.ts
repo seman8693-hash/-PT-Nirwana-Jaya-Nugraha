@@ -192,9 +192,11 @@ export interface PurchaseInvoice {
 // 6. PENJUALAN: SPH, SO, INVOICE
 export interface SPHItem {
   id: string;
+  productId?: string;
   name: string;
   qty: number;
   unit: string;
+  priceType?: 'toko' | 'kontraktor' | 'custom';
   unitPrice: number;
   subtotal: number;
 }
@@ -204,9 +206,13 @@ export interface SPHQuotation {
   code: string;
   customerName: string;
   customerPhone?: string;
+  customerAddress?: string;
   projectTitle: string;
   date: string;
   validUntil: string;
+  priceTier?: 'harga_toko' | 'harga_kontraktor' | 'harga_manual';
+  isPpn?: boolean;
+  ppnRate?: number;
   itemsSummary: string;
   subtotal: number;
   ppnAmount: number;
@@ -422,4 +428,17 @@ export interface MonthlySalesTrend {
   penjualanKios: number;
   totalOmset: number;
   totalUnitsSold: number;
+}
+
+// 13. LISENSI & MASA BERLAKU SISTEM OPERASIONAL
+export interface LicenseInfo {
+  validUntil: string; // Format 'YYYY-MM-DD' mis. '2026-10-10'
+  licenseKey: string; // e.g. 'NJN-ERP-2026-RR-9042'
+  planType: string;   // e.g. 'Lisensi Operasional Kios & ERP Toko Resmi'
+  licensedTo: string; // 'TOKO NIRWANA JAYA NUGRAHA'
+  ownerName: string;  // 'Rudi Ruhdiana'
+  autoRenew: boolean; // Perpanjangan otomatis
+  activationDate: string; // '2026-01-01'
+  lastExtendedDate?: string;
+  notes?: string;
 }

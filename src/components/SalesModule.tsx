@@ -17,11 +17,17 @@ import {
   Percent,
   Calculator,
   Edit2,
+  Trash2,
+  Layers,
+  Tag,
+  Check,
+  Sparkles,
   X
 } from 'lucide-react';
 import { store } from '../store';
 import { SPHQuotation, SalesOrder, SalesInvoice, SPHItem, Customer } from '../types';
 import { formatRupiah, formatDate } from '../utils/format';
+import { SphPreviewModal } from './SphPreviewModal';
 
 interface SalesModuleProps {
   onPrintSph: (sph: SPHQuotation) => void;
@@ -39,6 +45,8 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
 
   // Modals
   const [isSphModalOpen, setIsSphModalOpen] = useState(false);
+  const [selectedPreviewSph, setSelectedPreviewSph] = useState<SPHQuotation | null>(null);
+  const [isPreviewSphOpen, setIsPreviewSphOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<SalesInvoice | null>(null);
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<'all' | 'unpaid' | 'overdue' | 'paid' | 'draft' | 'sent'>('all');
@@ -54,18 +62,213 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
   const soList = store.getSalesOrders();
   const invoices = store.getInvoices();
 
-  // SPH Form
+  // SPH Form State with 5 options:
+  // 1. Rekanan (Pilih atau Ketik Baru)
+  // 2. Nama Proyek
+  // 3. Barang yang ditawarkan
+  // 4. Harga (Harga Toko vs Harga Kontraktor)
+  // 5. Opsi PPN / NON PPN
+  const [isManualCustomer, setIsManualCustomer] = useState(customers.length === 0);
   const [sphForm, setSphForm] = useState({
     customerId: customers[0]?.id || '',
     customerName: customers[0]?.name || '',
     customerPhone: customers[0]?.phone || '',
+    customerAddress: customers[0]?.address || '',
     projectTitle: '',
+    priceTier: 'harga_kontraktor' as 'harga_toko' | 'harga_kontraktor' | 'harga_manual', // Opsi 5: Harga Toko vs Kontraktor vs Manual
+    isPpn: true,                                                                        // Opsi 6: Opsi PPN vs NON PPN
+    ppnRate: 11,
     validDays: 30,
     items: [
-      { id: '1', name: products[0]?.name || 'Kabel Listrik NYY', qty: 50, unit: products[0]?.unit || 'Meter', unitPrice: products[0]?.price || 150000, subtotal: 7500000 }
+      {
+        id: '1',
+        productId: products[0]?.id || '',
+        name: products[0]?.name || 'Panel Box Distribusi & Komponen Listrik',
+        qty: 1,
+        unit: products[0]?.unit || 'Set',
+        priceType: 'kontraktor' as 'toko' | 'kontraktor' | 'custom',
+        unitPrice: products[0]?.priceProject || products[0]?.price || 1500000,
+        subtotal: products[0]?.priceProject || products[0]?.price || 1500000
+      }
     ],
-    termsAndConditions: '1. Harga belum termasuk PPN 11% jika diterbitkan faktur pajak.\n2. Waktu pengiriman 3-5 hari kerja setelah PO diterima.\n3. Pembayaran tempo 30 hari via Rekening BCA PT Nirwana Jaya Nugraha.'
+    termsAndConditions: '1. Penawaran harga berlaku selama 30 hari kalender sejak tanggal diterbitkan.\n2. Waktu pengiriman / fabrikasi 3-5 hari kerja setelah Surat Pesanan (PO) disetujui.\n3. Pembayaran via Transfer Bank Resmi Toko Nirwana Jaya Nugraha.'
   });
+
+  // Tambahkan Rekanan Baru Langsung ke Database
+  const handleAddNewCustomerToDatabase = () => {
+    if (!sphForm.customerName.trim()) {
+      onNotify?.('Silakan ketik nama rekanan terlebih dahulu!', 'error');
+      return;
+    }
+    const newCust = {
+      name: sphForm.customerName.trim(),
+      phone: sphForm.customerPhone.trim() || '-',
+      address: sphForm.customerAddress.trim() || 'Alamat Proyek Rekanan',
+      type: 'kontraktor' as const,
+      creditLimit: 50000000
+    };
+    store.addCustomer(newCust);
+    const updated = store.getCustomers();
+    const created = updated.find(c => c.name === newCust.name) || updated[updated.length - 1];
+    if (created) {
+      setSphForm(prev => ({
+        ...prev,
+        customerId: created.id,
+        customerName: created.name,
+        customerPhone: created.phone,
+        customerAddress: created.address
+      }));
+    }
+    setIsManualCustomer(false);
+    onNotify?.(`Rekanan "${newCust.name}" berhasil ditambahkan ke database & terpilih otomatis!`, 'success');
+  };
+
+  // Tambahkan Barang Manual Langsung ke Master Stok Toko
+  const handleSaveItemToProductMaster = (itemIndex: number) => {
+    const item = sphForm.items[itemIndex];
+    if (!item || !item.name.trim()) {
+      onNotify?.('Ketik uraian nama barang terlebih dahulu!', 'error');
+      return;
+    }
+    const priceToko = item.unitPrice || 100000;
+    const priceProj = sphForm.priceTier === 'harga_kontraktor' ? item.unitPrice : Math.round(item.unitPrice * 0.9);
+    const newProd = {
+      name: item.name.trim(),
+      sku: `PNL-${Date.now().toString().slice(-4)}`,
+      category: 'Panel Listrik & Komponen',
+      price: priceToko,
+      priceProject: priceProj,
+      priceWholesale: priceProj,
+      hppPrice: Math.round(priceToko * 0.75),
+      stock: 10,
+      minStock: 2,
+      monthlyAvgSales: 10,
+      leadTimeDays: 7,
+      unit: item.unit || 'Pcs',
+      rackLocation: 'Gudang Panel',
+      specification: 'Komponen Panel Listrik Resmi Toko Nirwana Jaya Nugraha'
+    };
+    store.addProduct(newProd);
+    const allProds = store.getProducts();
+    const createdProd = allProds.find(p => p.name === newProd.name);
+    if (createdProd) {
+      handleSphItemChange(itemIndex, 'productId', createdProd.id);
+    }
+    onNotify?.(`Barang "${newProd.name}" berhasil disimpan ke Master Stok Toko!`, 'success');
+  };
+
+  const handleSphAddItem = () => {
+    const newItem = {
+      id: Date.now().toString(),
+      productId: '',
+      name: '',
+      qty: 1,
+      unit: 'Pcs',
+      priceType: sphForm.priceTier === 'harga_kontraktor' ? ('kontraktor' as const) : ('toko' as const),
+      unitPrice: 0,
+      subtotal: 0
+    };
+    setSphForm(prev => ({
+      ...prev,
+      items: [...prev.items, newItem]
+    }));
+  };
+
+  const handleSphRemoveItem = (index: number) => {
+    if (sphForm.items.length <= 1) return;
+    setSphForm(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSphItemChange = (index: number, field: string, value: any) => {
+    const updated = [...sphForm.items];
+    const item = { ...updated[index], [field]: value };
+
+    if (field === 'productId') {
+      const prod = products.find(p => p.id === value);
+      if (prod) {
+        item.name = prod.name;
+        item.unit = prod.unit;
+        const tierPrice = sphForm.priceTier === 'harga_kontraktor'
+          ? (prod.priceProject || prod.priceWholesale || Math.round(prod.price * 0.9))
+          : prod.price;
+        item.unitPrice = tierPrice;
+        item.priceType = sphForm.priceTier === 'harga_kontraktor' ? 'kontraktor' : 'toko';
+        item.subtotal = item.qty * tierPrice;
+      }
+    } else if (field === 'priceType') {
+      const prod = products.find(p => p.id === item.productId);
+      if (prod) {
+        if (value === 'toko') {
+          item.unitPrice = prod.price;
+        } else if (value === 'kontraktor') {
+          item.unitPrice = prod.priceProject || prod.priceWholesale || Math.round(prod.price * 0.9);
+        }
+        item.subtotal = item.qty * item.unitPrice;
+      }
+    } else if (field === 'qty' || field === 'unitPrice') {
+      item.subtotal = (Number(item.qty) || 0) * (Number(item.unitPrice) || 0);
+    }
+
+    updated[index] = item;
+    setSphForm(prev => ({ ...prev, items: updated }));
+  };
+
+  const handleSphPriceTierChange = (newTier: 'harga_toko' | 'harga_kontraktor' | 'harga_manual') => {
+    if (newTier === 'harga_manual') {
+      setSphForm(prev => ({ ...prev, priceTier: newTier }));
+      return;
+    }
+
+    const updated = sphForm.items.map(it => {
+      if (it.productId) {
+        const prod = products.find(p => p.id === it.productId);
+        if (prod) {
+          const newPrice = newTier === 'harga_kontraktor'
+            ? (prod.priceProject || prod.priceWholesale || Math.round(prod.price * 0.9))
+            : prod.price;
+          return {
+            ...it,
+            priceType: newTier === 'harga_kontraktor' ? ('kontraktor' as const) : ('toko' as const),
+            unitPrice: newPrice,
+            subtotal: it.qty * newPrice
+          };
+        }
+      }
+      return it;
+    });
+
+    setSphForm(prev => ({
+      ...prev,
+      priceTier: newTier,
+      items: updated
+    }));
+  };
+
+  // Quick Preset Add Item for Panel Listrik
+  const handleAddPanelPreset = (name: string, unit: string, defaultPriceToko: number, defaultPriceKontraktor: number) => {
+    const unitPrice = sphForm.priceTier === 'harga_kontraktor' ? defaultPriceKontraktor : defaultPriceToko;
+    const newItem = {
+      id: Date.now().toString(),
+      productId: '',
+      name,
+      qty: 1,
+      unit,
+      priceType: sphForm.priceTier === 'harga_kontraktor' ? ('kontraktor' as const) : ('toko' as const),
+      unitPrice,
+      subtotal: unitPrice
+    };
+    setSphForm(prev => ({
+      ...prev,
+      items: [...prev.items, newItem]
+    }));
+  };
+
+  const sphSubtotal = sphForm.items.reduce((s, it) => s + (it.subtotal || 0), 0);
+  const sphPpnAmount = sphForm.isPpn ? Math.round(sphSubtotal * 0.11) : 0;
+  const sphTotalAmount = sphSubtotal + sphPpnAmount;
 
   // Invoice Form with MANUAL PPN and MANUAL PPH
   const [invForm, setInvForm] = useState({
@@ -79,20 +282,20 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
     date: new Date().toISOString().split('T')[0],
     dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
     items: [
-      { id: '1', description: 'Pengadaan Kabel Supreme NYY 4x16 mm²', qty: 50, unit: 'Meter', unitPrice: 185000, total: 9250000 }
+      { id: '1', description: '', qty: 1, unit: 'Pcs', unitPrice: 0, total: 0 }
     ],
     discount: 0,
     // MANUAL PPN STATE
     ppnMode: '11' as '11' | '0' | 'manual',
     ppnRate: 11,
-    taxPpn: 1017500,
+    taxPpn: 0,
     // MANUAL PPH STATE
     pphMode: 'none' as 'none' | 'pph23' | 'pph22' | 'pph4_2' | 'manual',
     pphType: 'none',
     pphRate: 0,
     taxPph: 0,
     status: 'unpaid' as 'draft' | 'sent' | 'unpaid' | 'paid' | 'overdue',
-    notes: 'Pembayaran ditransfer ke Rekening BCA 810-098-9921 a.n PT NIRWANA JAYA NUGRAHA.'
+    notes: 'Pembayaran ditransfer ke rekening bank resmi TOKO NIRWANA JAYA NUGRAHA.'
   });
 
   // Recalculate Invoice totals when items, discount, or manual taxes change
@@ -199,18 +402,18 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
       date: new Date().toISOString().split('T')[0],
       dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
       items: [
-        { id: '1', description: 'Pengadaan Kabel Supreme NYY 4x16 mm²', qty: 50, unit: 'Meter', unitPrice: 185000, total: 9250000 }
+        { id: '1', description: '', qty: 1, unit: 'Pcs', unitPrice: 0, total: 0 }
       ],
       discount: 0,
       ppnMode: '11',
       ppnRate: 11,
-      taxPpn: 1017500,
+      taxPpn: 0,
       pphMode: 'none',
       pphType: 'none',
       pphRate: 0,
       taxPph: 0,
       status: 'unpaid',
-      notes: 'Pembayaran ditransfer ke Rekening BCA 810-098-9921 a.n PT NIRWANA JAYA NUGRAHA.'
+      notes: 'Pembayaran ditransfer ke rekening bank resmi TOKO NIRWANA JAYA NUGRAHA.'
     });
     setIsInvoiceModalOpen(true);
   };
@@ -720,17 +923,28 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
                         {sph.status === 'waiting_po' && (
                           <button
                             onClick={() => handleConvertSphToSo(sph)}
-                            className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-[11px] transition"
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] transition cursor-pointer"
                           >
                             Jadikan SO
                           </button>
                         )}
                         <button
+                          onClick={() => {
+                            setSelectedPreviewSph(sph);
+                            setIsPreviewSphOpen(true);
+                          }}
+                          className="px-2.5 py-1 text-slate-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg inline-flex items-center gap-1 text-[11px] font-bold transition cursor-pointer shadow-sm"
+                          title="Pratinjau, Download PDF & Cetak Sesuai Ukuran"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Pratinjau &amp; PDF</span>
+                        </button>
+                        <button
                           onClick={() => onPrintSph(sph)}
-                          className="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg inline-flex items-center gap-1 text-[11px] font-bold"
+                          className="p-1 text-slate-600 hover:bg-slate-100 rounded-lg inline-flex items-center gap-1 text-[11px] font-medium transition cursor-pointer"
+                          title="Cetak Cepat"
                         >
                           <Printer className="w-3.5 h-3.5" />
-                          <span>Cetak</span>
                         </button>
                       </div>
                     </td>
@@ -1213,7 +1427,7 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
                 onChange={e => setPayMethod(e.target.value)}
                 className="w-full px-3 py-2 border rounded-xl font-bold"
               >
-                <option value="Transfer Bank BCA">Transfer Bank BCA PT Nirwana Jaya Nugraha</option>
+                <option value="Transfer Bank BCA">Transfer Bank BCA Toko Nirwana Jaya Nugraha</option>
                 <option value="Transfer Bank Mandiri">Transfer Bank Mandiri</option>
                 <option value="Kasir Tunai">Kas Tunai Kios</option>
                 <option value="QRIS Merchant">QRIS Merchant</option>
@@ -1247,13 +1461,30 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
         </div>
       )}
 
-      {/* MODAL: BUAT SPH */}
+      {/* MODAL: BUAT SPH BARU DENGAN 5 OPSI (REKANAN, NAMA PROYEK, BARANG, HARGA TOKO/KONTRAKTOR, PPN/NON PPN) */}
       {isSphModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar text-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-black text-slate-900">Buat Surat Penawaran Harga (SPH) Baru</h3>
-              <button onClick={() => setIsSphModalOpen(false)} className="p-1 text-slate-400">
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 md:p-8 shadow-2xl max-h-[92vh] overflow-y-auto custom-scrollbar text-xs space-y-5">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 leading-tight">
+                    Buat Surat Penawaran Harga (SPH) Baru
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    TOKO NIRWANA JAYA NUGRAHA • Penawaran Pengadaan Kebutuhan Panel Listrik & Komponen
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSphModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1261,69 +1492,510 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
             <form
               onSubmit={e => {
                 e.preventDefault();
+                if (!sphForm.customerName.trim()) {
+                  onNotify?.('Silakan pilih atau ketik nama Rekanan!', 'error');
+                  return;
+                }
+                if (!sphForm.projectTitle.trim()) {
+                  onNotify?.('Nama Proyek / Pengadaan harus diisi!', 'error');
+                  return;
+                }
+                if (sphForm.items.length === 0 || sphForm.items.some(it => !it.name.trim())) {
+                  onNotify?.('Lengkapi uraian barang yang ditawarkan!', 'error');
+                  return;
+                }
+
                 const newSph = store.addSPH({
-                  customerName: sphForm.customerName || 'Customer Proyek',
+                  customerName: sphForm.customerName,
                   customerPhone: sphForm.customerPhone,
+                  customerAddress: sphForm.customerAddress,
                   projectTitle: sphForm.projectTitle,
                   date: new Date().toISOString().split('T')[0],
                   validUntil: new Date(Date.now() + sphForm.validDays * 86400000).toISOString().split('T')[0],
+                  priceTier: sphForm.priceTier,
+                  isPpn: sphForm.isPpn,
+                  ppnRate: sphForm.isPpn ? 11 : 0,
                   itemsSummary: sphForm.items.map(it => `${it.qty} ${it.unit} ${it.name}`).join(', '),
-                  subtotal: sphForm.items.reduce((s, it) => s + it.subtotal, 0),
-                  ppnAmount: Math.round(sphForm.items.reduce((s, it) => s + it.subtotal, 0) * 0.11),
-                  totalAmount: Math.round(sphForm.items.reduce((s, it) => s + it.subtotal, 0) * 1.11),
+                  subtotal: sphSubtotal,
+                  ppnAmount: sphPpnAmount,
+                  totalAmount: sphTotalAmount,
                   items: sphForm.items,
                   termsAndConditions: sphForm.termsAndConditions
                 });
+
                 setIsSphModalOpen(false);
-                onNotify?.(`Surat Penawaran ${newSph.code} berhasil diterbitkan!`, 'success');
+                setSelectedPreviewSph(newSph);
+                setIsPreviewSphOpen(true);
+                onNotify?.(`Surat Penawaran ${newSph.code} untuk ${newSph.customerName} berhasil diterbitkan! Pratinjau dokumen telah dibuka.`, 'success');
               }}
-              className="space-y-4"
+              className="space-y-5"
             >
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Pilih Customer Rekanan *</label>
-                  <select
-                    value={sphForm.customerId}
-                    onChange={e => {
-                      const cust = customers.find(c => c.id === e.target.value);
-                      setSphForm({
-                        ...sphForm,
-                        customerId: e.target.value,
-                        customerName: cust?.name || '',
-                        customerPhone: cust?.phone || ''
-                      });
-                    }}
-                    className="w-full px-3 py-2 border rounded-xl font-bold"
-                  >
-                    {customers.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+              {/* OPSI 1: REKANAN & OPSI 2: NAMA PROYEK */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                  <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <Building className="w-4 h-4 text-amber-500" />
+                    <span>1. Data Rekanan & 2. Nama Proyek</span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isManualCustomer}
+                        onChange={e => {
+                          setIsManualCustomer(e.target.checked);
+                          if (e.target.checked) {
+                            setSphForm(prev => ({ ...prev, customerId: '', customerName: '', customerPhone: '' }));
+                          } else if (customers.length > 0) {
+                            setSphForm(prev => ({
+                              ...prev,
+                              customerId: customers[0].id,
+                              customerName: customers[0].name,
+                              customerPhone: customers[0].phone || ''
+                            }));
+                          }
+                        }}
+                        className="rounded text-amber-500 focus:ring-amber-400"
+                      />
+                      <span>Ketik Rekanan Baru (Manual)</span>
+                    </label>
+                  </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Rekanan Selector */}
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">
+                      1. Rekanan / Klien *
+                    </label>
+                    {isManualCustomer ? (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Contoh: PT. Adhi Mandiri Elektrik / CV. Prima Panel"
+                        value={sphForm.customerName}
+                        onChange={e => setSphForm(prev => ({ ...prev, customerName: e.target.value }))}
+                        className="w-full px-3 py-2 border rounded-xl font-bold bg-white"
+                      />
+                    ) : (
+                      <select
+                        value={sphForm.customerId}
+                        onChange={e => {
+                          const cust = customers.find(c => c.id === e.target.value);
+                          setSphForm(prev => ({
+                            ...prev,
+                            customerId: e.target.value,
+                            customerName: cust?.name || '',
+                            customerPhone: cust?.phone || '',
+                            customerAddress: cust?.address || ''
+                          }));
+                        }}
+                        className="w-full px-3 py-2 border rounded-xl font-bold bg-white"
+                      >
+                        {customers.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} ({c.type.toUpperCase()})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  {/* Telepon Rekanan */}
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">
+                      Kontak / No. Telepon Rekanan
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: 0812-3456-7890"
+                      value={sphForm.customerPhone}
+                      onChange={e => setSphForm(prev => ({ ...prev, customerPhone: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-xl font-mono bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Nama Proyek */}
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Nama Proyek / Pengadaan *</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    2. Nama Proyek / Pengadaan Panel Listrik *
+                  </label>
                   <input
                     type="text"
                     required
+                    placeholder="Contoh: Pengadaan & Fabrikasi Panel Listrik LVMDP Gedung B / Instalasi Elektrikal"
                     value={sphForm.projectTitle}
-                    onChange={e => setSphForm({ ...sphForm, projectTitle: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl font-bold"
+                    onChange={e => setSphForm(prev => ({ ...prev, projectTitle: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl font-bold text-slate-900 bg-white"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t">
-                <button type="button" onClick={() => setIsSphModalOpen(false)} className="px-4 py-2 border rounded-xl font-bold">
+              {/* OPSI 5: HARGA (HARGA TOKO / HARGA KONTRAKTOR) & OPSI 6: PPN / NON PPN */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Opsi 5: Harga Toko vs Kontraktor */}
+                <div className="p-3.5 rounded-2xl border border-amber-300 bg-amber-50/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <Tag className="w-4 h-4 text-amber-600" />
+                      <span>5. Kategori Tarif Harga Penawaran</span>
+                    </label>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-200 text-amber-900 uppercase">
+                      {sphForm.priceTier === 'harga_kontraktor' ? 'Tier Kontraktor Aktif' : 'Tier Toko Aktif'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSphPriceTierChange('harga_toko')}
+                      className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
+                        sphForm.priceTier === 'harga_toko'
+                          ? 'bg-white border-amber-500 shadow-md text-amber-950 font-black'
+                          : 'bg-white/60 border-slate-200 text-slate-600 hover:bg-white'
+                      }`}
+                    >
+                      <span className="text-sm">🏪</span>
+                      <span className="font-bold text-xs">Harga Toko</span>
+                      <span className="text-[10px] text-slate-500 font-normal">Tarif Standar / Retail</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSphPriceTierChange('harga_kontraktor')}
+                      className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
+                        sphForm.priceTier === 'harga_kontraktor'
+                          ? 'bg-amber-500 border-amber-600 shadow-md text-slate-950 font-black'
+                          : 'bg-white/60 border-slate-200 text-slate-600 hover:bg-white'
+                      }`}
+                    >
+                      <span className="text-sm">🏗️</span>
+                      <span className="font-bold text-xs">Harga Kontraktor</span>
+                      <span className={`text-[10px] font-normal ${sphForm.priceTier === 'harga_kontraktor' ? 'text-slate-900' : 'text-slate-500'}`}>
+                        Tarif Rekanan & Proyek
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Opsi 6: PPN / NON PPN */}
+                <div className="p-3.5 rounded-2xl border border-emerald-300 bg-emerald-50/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <Percent className="w-4 h-4 text-emerald-600" />
+                      <span>6. Opsi Pajak (PPN / NON PPN)</span>
+                    </label>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                      sphForm.isPpn ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {sphForm.isPpn ? 'PPN 11% Aktif' : 'NON PPN Aktif'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setSphForm(prev => ({ ...prev, isPpn: false }))}
+                      className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
+                        !sphForm.isPpn
+                          ? 'bg-slate-900 border-slate-900 shadow-md text-white font-black'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-white'
+                      }`}
+                    >
+                      <span className="text-sm">⚪</span>
+                      <span className="font-bold text-xs">NON PPN</span>
+                      <span className={`text-[10px] font-normal ${!sphForm.isPpn ? 'text-slate-300' : 'text-slate-500'}`}>
+                        Tanpa PPN (0%)
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSphForm(prev => ({ ...prev, isPpn: true }))}
+                      className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
+                        sphForm.isPpn
+                          ? 'bg-emerald-600 border-emerald-700 shadow-md text-white font-black'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-white'
+                      }`}
+                    >
+                      <span className="text-sm">🟢</span>
+                      <span className="font-bold text-xs">PPN 11%</span>
+                      <span className={`text-[10px] font-normal ${sphForm.isPpn ? 'text-emerald-100' : 'text-slate-500'}`}>
+                        Faktur Pajak Standar
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* OPSI 4: BARANG YANG DITAWARKAN */}
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-amber-500" />
+                      <span>4. Barang yang Ditawarkan (Panel & Elektrikal)</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Pilih dari stok master atau ketik spesifikasi custom rakitan panel. Harga terisi otomatis sesuai opsi tier tarif terpilih ({sphForm.priceTier === 'harga_kontraktor' ? 'Harga Kontraktor' : 'Harga Toko'}).
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSphAddItem}
+                    className="self-start sm:self-auto flex items-center gap-1 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-xs transition cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-amber-400" />
+                    <span>+ Tambah Baris Barang</span>
+                  </button>
+                </div>
+
+                {/* Quick Presets Kebutuhan Panel Listrik */}
+                <div className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="font-bold text-slate-700 flex items-center gap-1 mr-1">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Quick Preset Panel:</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleAddPanelPreset('Panel Box Wall Mounting 60x80x25 Powder Coating', 'Unit', 1250000, 1100000)}
+                    className="px-2 py-0.5 bg-white hover:bg-amber-100 rounded-md border text-slate-700 font-medium"
+                  >
+                    + Box Panel 60x80x25
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddPanelPreset('MCCB 3P 100A 36kA Schneider Electric', 'Pcs', 1850000, 1650000)}
+                    className="px-2 py-0.5 bg-white hover:bg-amber-100 rounded-md border text-slate-700 font-medium"
+                  >
+                    + MCCB 3P 100A
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddPanelPreset('MCB 1P 16A Schneider Domae', 'Pcs', 85000, 72000)}
+                    className="px-2 py-0.5 bg-white hover:bg-amber-100 rounded-md border text-slate-700 font-medium"
+                  >
+                    + MCB 1P Schneider
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddPanelPreset('Kabel Power Supreme NYY 4x16 mm²', 'Meter', 195000, 175000)}
+                    className="px-2 py-0.5 bg-white hover:bg-amber-100 rounded-md border text-slate-700 font-medium"
+                  >
+                    + Kabel NYY 4x16mm²
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddPanelPreset('Busbar Copper Tembaga Murni 3x25mm (Batang 3m)', 'Batang', 420000, 380000)}
+                    className="px-2 py-0.5 bg-white hover:bg-amber-100 rounded-md border text-slate-700 font-medium"
+                  >
+                    + Busbar Cu 3x25mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddPanelPreset('Pilot Lamp LED 220V (Merah, Kuning, Hijau)', 'Set', 45000, 38000)}
+                    className="px-2 py-0.5 bg-white hover:bg-amber-100 rounded-md border text-slate-700 font-medium"
+                  >
+                    + Pilot Lamp Set
+                  </button>
+                </div>
+
+                {/* Dynamic Items Table */}
+                <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200">
+                      <tr>
+                        <th className="py-2.5 px-3 w-8 text-center">#</th>
+                        <th className="py-2.5 px-3">Uraian Barang / Spesifikasi Panel</th>
+                        <th className="py-2.5 px-3 w-20 text-center">Qty</th>
+                        <th className="py-2.5 px-3 w-24">Satuan</th>
+                        <th className="py-2.5 px-3 w-36 text-right">Harga Satuan (Rp)</th>
+                        <th className="py-2.5 px-3 w-36 text-right">Subtotal (Rp)</th>
+                        <th className="py-2.5 px-3 w-10 text-center"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {sphForm.items.map((item, idx) => (
+                        <tr key={item.id} className="hover:bg-slate-50/80">
+                          <td className="py-2.5 px-3 text-center text-slate-400 font-bold">
+                            {idx + 1}
+                          </td>
+
+                          {/* Uraian Barang */}
+                          <td className="py-2.5 px-3">
+                            <div className="space-y-1.5">
+                              {products.length > 0 && (
+                                <select
+                                  value={item.productId || ''}
+                                  onChange={e => handleSphItemChange(idx, 'productId', e.target.value)}
+                                  className="w-full px-2 py-1 border rounded-lg text-xs bg-slate-50 text-slate-700 font-medium"
+                                >
+                                  <option value="">-- Pilih Barang dari Master Stok (Opsional) --</option>
+                                  {products.map(p => (
+                                    <option key={p.id} value={p.id}>
+                                      {p.name} (Toko: {formatRupiah(p.price)} | Kontraktor: {formatRupiah(p.priceProject || p.priceWholesale || p.price)})
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                              <input
+                                type="text"
+                                required
+                                placeholder="Ketik nama spesifikasi barang / rakitan panel..."
+                                value={item.name}
+                                onChange={e => handleSphItemChange(idx, 'name', e.target.value)}
+                                className="w-full px-2.5 py-1.5 border rounded-lg font-bold text-slate-900 bg-white"
+                              />
+                            </div>
+                          </td>
+
+                          {/* Qty */}
+                          <td className="py-2.5 px-3 text-center">
+                            <input
+                              type="number"
+                              min={1}
+                              required
+                              value={item.qty}
+                              onChange={e => handleSphItemChange(idx, 'qty', Math.max(1, parseInt(e.target.value) || 1))}
+                              className="w-full px-2 py-1.5 border rounded-lg text-center font-mono font-bold"
+                            />
+                          </td>
+
+                          {/* Satuan */}
+                          <td className="py-2.5 px-3">
+                            <input
+                              type="text"
+                              value={item.unit}
+                              onChange={e => handleSphItemChange(idx, 'unit', e.target.value)}
+                              placeholder="Satuan"
+                              className="w-full px-2 py-1.5 border rounded-lg text-center font-semibold"
+                            />
+                          </td>
+
+                          {/* Harga Satuan */}
+                          <td className="py-2.5 px-3 text-right">
+                            <input
+                              type="number"
+                              min={0}
+                              required
+                              value={item.unitPrice}
+                              onChange={e => handleSphItemChange(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
+                              className="w-full px-2 py-1.5 border rounded-lg text-right font-mono font-bold text-slate-900"
+                            />
+                            <div className="text-[10px] text-slate-400 mt-0.5 text-right">
+                              {sphForm.priceTier === 'harga_kontraktor' ? 'Tarif Kontraktor' : 'Tarif Toko'}
+                            </div>
+                          </td>
+
+                          {/* Subtotal */}
+                          <td className="py-2.5 px-3 text-right font-mono font-black text-slate-900">
+                            {formatRupiah(item.subtotal)}
+                          </td>
+
+                          {/* Delete Item */}
+                          <td className="py-2.5 px-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleSphRemoveItem(idx)}
+                              disabled={sphForm.items.length <= 1}
+                              className="p-1 text-slate-300 hover:text-rose-600 disabled:opacity-20 cursor-pointer transition"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* RINGKASAN KALKULASI & SYARAT PENAWARAN */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Syarat & Ketentuan Penawaran (Tercetak di KOP Surat)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={sphForm.termsAndConditions}
+                    onChange={e => setSphForm(prev => ({ ...prev, termsAndConditions: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl font-mono text-[11px]"
+                  />
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-slate-500 font-semibold">Masa Berlaku Penawaran:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={180}
+                      value={sphForm.validDays}
+                      onChange={e => setSphForm(prev => ({ ...prev, validDays: parseInt(e.target.value) || 30 }))}
+                      className="w-16 px-2 py-1 border rounded-lg text-center font-bold font-mono"
+                    />
+                    <span className="text-slate-500">Hari Kalender</span>
+                  </div>
+                </div>
+
+                {/* Calculation Summary Box */}
+                <div className="bg-slate-900 text-white p-4 rounded-2xl space-y-2 font-mono">
+                  <div className="flex justify-between text-slate-300">
+                    <span>Subtotal Barang:</span>
+                    <span className="font-bold">{formatRupiah(sphSubtotal)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs">
+                    <span className={sphForm.isPpn ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
+                      {sphForm.isPpn ? '+ PPN 11%:' : 'PPN (Non-PPN):'}
+                    </span>
+                    <span className={sphForm.isPpn ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
+                      {sphForm.isPpn ? `+${formatRupiah(sphPpnAmount)}` : 'Rp 0 (0%)'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-base font-black pt-2 border-t border-slate-700 text-amber-300">
+                    <span>TOTAL PENAWARAN:</span>
+                    <span>{formatRupiah(sphTotalAmount)}</span>
+                  </div>
+
+                  <div className="text-[10px] text-slate-400 pt-1 flex justify-between">
+                    <span>Kategori Tarif:</span>
+                    <span className="uppercase text-amber-400 font-bold">
+                      {sphForm.priceTier === 'harga_kontraktor' ? 'Harga Kontraktor' : 'Harga Toko'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setIsSphModalOpen(false)}
+                  className="px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                >
                   Batal
                 </button>
-                <button type="submit" className="px-5 py-2 bg-blue-600 text-white font-bold rounded-xl shadow-md">
-                  Terbitkan SPH Resmi
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center gap-2 cursor-pointer"
+                >
+                  <FileText className="w-4 h-4 font-black" />
+                  <span>Terbitkan SPH Resmi</span>
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* MODAL PRATINJAU SPH DENGAN FITUR DOWNLOAD PDF & CETAK SESUAI UKURAN */}
+      <SphPreviewModal
+        isOpen={isPreviewSphOpen}
+        sph={selectedPreviewSph}
+        onClose={() => setIsPreviewSphOpen(false)}
+        onConvertToInvoice={handleConvertSphToSo}
+        onNotify={onNotify}
+      />
     </div>
   );
 };

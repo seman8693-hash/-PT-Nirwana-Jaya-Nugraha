@@ -139,7 +139,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
           </div>
           <h2 className="text-2xl font-black text-slate-900">Dashboard Eksekutif & KPI</h2>
           <p className="text-xs text-slate-500 mt-1">
-            Pantau performa penjualan riil, perputaran stok barang, hutang piutang, dan arus kas PT. Nirwana Jaya Nugraha.
+            Pantau performa penjualan riil, perputaran stok barang, hutang piutang, dan arus kas {store.getCompanySettings().companyName || 'Toko Nirwana Jaya Nugraha'}.
           </p>
         </div>
 

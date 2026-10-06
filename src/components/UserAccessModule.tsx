@@ -29,6 +29,7 @@ export const UserAccessModule: React.FC<UserAccessModuleProps> = ({ onNotify }) 
     name: '',
     username: '',
     role: 'kasir' as 'owner' | 'kasir' | 'gudang' | 'keuangan' | 'sales',
+    pin: '1234',
     active: true
   });
 
@@ -47,7 +48,7 @@ export const UserAccessModule: React.FC<UserAccessModuleProps> = ({ onNotify }) 
 
     store.addUser(userForm);
     setIsAddUserOpen(false);
-    setUserForm({ name: '', username: '', role: 'kasir', active: true });
+    setUserForm({ name: '', username: '', role: 'kasir', pin: '1234', active: true });
     onNotify?.(`Pengguna baru ${userForm.name} berhasil dibuat!`, 'success');
   };
 
@@ -72,13 +73,25 @@ export const UserAccessModule: React.FC<UserAccessModuleProps> = ({ onNotify }) 
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddUserOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ Tambah User Baru</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const u = store.generateAutoUser('kasir');
+              onNotify?.(`Akun otomatis dibuat: ${u.name} (Username: ${u.username}, PIN: ${u.pin})`, 'success');
+            }}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold rounded-xl text-xs shadow transition cursor-pointer"
+          >
+            <span>⚡ Buat Akun Otomatis</span>
+          </button>
+          <button
+            onClick={() => setIsAddUserOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Tambah User Manual</span>
+          </button>
+        </div>
       </div>
 
       {/* Sub Tabs */}
@@ -194,7 +207,7 @@ export const UserAccessModule: React.FC<UserAccessModuleProps> = ({ onNotify }) 
           <div>
             <h3 className="text-base font-black text-slate-900">Matriks Hak Akses & Kewenangan Fitur</h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Pembagian wewenang operasional berdasarkan jabatan staf PT Nirwana Jaya Nugraha.
+              Pembagian wewenang operasional berdasarkan jabatan staf Toko Nirwana Jaya Nugraha.
             </p>
           </div>
 
@@ -348,6 +361,19 @@ export const UserAccessModule: React.FC<UserAccessModuleProps> = ({ onNotify }) 
                   <option value="sales">Sales & Estimator Proyek</option>
                   <option value="owner">Owner / Direktur Utama</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">PIN Keamanan (4 Digit) *</label>
+                <input
+                  type="password"
+                  maxLength={6}
+                  required
+                  placeholder="1234"
+                  value={userForm.pin}
+                  onChange={e => setUserForm({ ...userForm, pin: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl font-mono tracking-widest font-bold"
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t">

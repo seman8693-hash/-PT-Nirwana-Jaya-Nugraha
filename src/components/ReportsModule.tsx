@@ -170,7 +170,7 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ onNotify }) => {
             <h3 className="text-base font-black text-slate-900 uppercase">
               Laporan {selectedReport.replace('-', ' & ')}
             </h3>
-            <p className="text-xs text-slate-500 font-semibold">PT. NIRWANA JAYA NUGRAHA (BANDUNG)</p>
+            <p className="text-xs text-slate-500 font-semibold">{store.getCompanySettings().companyName || 'TOKO NIRWANA JAYA NUGRAHA'} (BANDUNG)</p>
           </div>
           <span className="text-xs text-slate-400 font-mono">
             Generated: {new Date().toLocaleDateString('id-ID')}

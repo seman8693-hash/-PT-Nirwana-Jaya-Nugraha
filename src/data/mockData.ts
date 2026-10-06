@@ -14,7 +14,7 @@ import {
 
 /**
  * DATABASE KOSONG SIAP KERJA OPERASIONAL ASLI
- * PT. NIRWANA JAYA NUGRAHA
+ * TOKO NIRWANA JAYA NUGRAHA
  * Semua data dummy transaksi, faktur, DO, mutasi, kas, dan master barang di-nol-kan.
  */
 
@@ -40,7 +40,7 @@ export const INITIAL_BANKS: BankAccount[] = [
     id: 'bank-1',
     bankName: 'Kas Tunai Kasir Kios',
     accountNumber: 'KAS-KASIR-01',
-    holderName: 'Kasir PT Nirwana Jaya Nugraha',
+    holderName: 'Kasir Toko Nirwana Jaya Nugraha',
     balance: 0,
     type: 'kas_toko'
   },
@@ -48,7 +48,7 @@ export const INITIAL_BANKS: BankAccount[] = [
     id: 'bank-2',
     bankName: 'Bank BCA Giro Operasional',
     accountNumber: '008-882-9901',
-    holderName: 'PT NIRWANA JAYA NUGRAHA',
+    holderName: 'TOKO NIRWANA JAYA NUGRAHA',
     balance: 0,
     type: 'bank'
   },
@@ -56,14 +56,14 @@ export const INITIAL_BANKS: BankAccount[] = [
     id: 'bank-3',
     bankName: 'Bank Mandiri Rekening Penerimaan',
     accountNumber: '131-00-4491-008',
-    holderName: 'PT NIRWANA JAYA NUGRAHA',
+    holderName: 'TOKO NIRWANA JAYA NUGRAHA',
     balance: 0,
     type: 'bank'
   }
 ];
 
 export const INITIAL_COMPANY_SETTINGS: CompanySettings = {
-  companyName: 'PT. NIRWANA JAYA NUGRAHA',
+  companyName: 'TOKO NIRWANA JAYA NUGRAHA',
   brandTagline: 'Distributor Alat Listrik, Panel Proyek & Kontraktor Elektrikal',
   npwp: '01.345.678.9-421.000',
   nib: '9120003418902',

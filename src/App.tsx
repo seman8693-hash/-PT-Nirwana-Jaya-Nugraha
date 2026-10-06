@@ -16,13 +16,17 @@ import { SettingsModule } from './components/SettingsModule';
 import { RestockModal } from './components/RestockModal';
 import { QrisModal } from './components/QrisModal';
 import { NjnLogo } from './components/NjnLogo';
+import { LoginScreen } from './components/LoginScreen';
+import { SphPreviewModal } from './components/SphPreviewModal';
 import { store } from './store';
 import { PosProduct, SalesInvoice, SPHQuotation, PKSContract, PurchaseInvoice, DeliveryOrder } from './types';
 import { formatRupiah, formatDate } from './utils/format';
-import { X, Printer, CheckCircle, Building2, LogOut, Check, Users, KeyRound } from 'lucide-react';
-import { PinModal } from './components/PinModal';
+import { X, Printer, CheckCircle, Building2, LogOut, Check, Users } from 'lucide-react';
 
 export const App: React.FC = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return localStorage.getItem('njn_auth_logged_in') === 'true';
+  });
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [, setVersion] = useState(0);
@@ -37,13 +41,6 @@ export const App: React.FC = () => {
   const [qrisConfirmFn, setQrisConfirmFn] = useState<(() => void) | null>(null);
 
   const [isUserSwitchModalOpen, setIsUserSwitchModalOpen] = useState(false);
-
-  // Modal ganti/reset PIN
-  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-  const [pinTarget, setPinTarget] = useState<{ id: string; username: string; name: string } | null>(null);
-
-  // Hanya owner yang boleh me-reset PIN user lain.
-  const isOwner = store.getCurrentUser().role === 'owner';
 
   // Print Preview Modal
   const [printData, setPrintData] = useState<{
@@ -93,6 +90,18 @@ export const App: React.FC = () => {
   };
 
   const companySettings = store.getCompanySettings();
+
+  if (!isLoggedIn) {
+    return (
+      <LoginScreen
+        onLoginSuccess={(user) => {
+          setIsLoggedIn(true);
+          localStorage.setItem('njn_auth_logged_in', 'true');
+          showToast(`Sesi aktif: ${user.name} (${user.role.toUpperCase()})`);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex h-screen bg-slate-100 text-slate-900 font-sans overflow-hidden">
@@ -266,12 +275,6 @@ export const App: React.FC = () => {
       )}
 
       {/* SWITCH USER / LOGOUT MODAL */}
-      <PinModal
-        open={isPinModalOpen}
-        targetUser={pinTarget}
-        onClose={() => setIsPinModalOpen(false)}
-      />
-
       {isUserSwitchModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 text-xs">
@@ -316,40 +319,26 @@ export const App: React.FC = () => {
                       </div>
                     </div>
                     {isSelected && <Check className="w-4 h-4 text-amber-600" />}
-                    {isOwner && !isSelected && (
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          setIsUserSwitchModalOpen(false);
-                          setPinTarget({ id: user.id, username: user.username, name: user.name });
-                          setIsPinModalOpen(true);
-                        }}
-                        title="Reset PIN user ini"
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition"
-                      >
-                        <KeyRound className="w-4 h-4" />
-                      </button>
-                    )}
                   </button>
                 );
               })}
             </div>
 
-            <div className="pt-3 border-t flex items-center justify-between gap-2">
+            <div className="pt-3 border-t flex items-center justify-between">
               <button
                 onClick={() => {
+                  localStorage.removeItem('njn_auth_logged_in');
+                  setIsLoggedIn(false);
                   setIsUserSwitchModalOpen(false);
-                  setPinTarget(null);
-                  setIsPinModalOpen(true);
                 }}
-                className="px-4 py-2 border rounded-xl font-bold flex items-center gap-1.5 text-slate-700 hover:bg-slate-50"
+                className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold flex items-center gap-1.5 transition cursor-pointer"
               >
-                <KeyRound className="w-4 h-4" />
-                Ganti PIN Saya
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Kunci & Ke Layar Login</span>
               </button>
               <button
                 onClick={() => setIsUserSwitchModalOpen(false)}
-                className="px-4 py-2 border rounded-xl font-bold"
+                className="px-4 py-2 border rounded-xl font-bold cursor-pointer"
               >
                 Tutup
               </button>
@@ -358,8 +347,23 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* PRINT PREVIEW MODAL FOR DOCUMENTS (SPH, SPK, NOTA, INVOICE, DO, RECEIPT) */}
-      {printData && (
+      {/* KHUSUS DOKUMEN SPH: PRATINJAU DENGAN FITUR DOWNLOAD PDF & CETAK SESUAI UKURAN (A4, F4, LETTER, A5) */}
+      {printData && printData.type === 'sph' && (
+        <SphPreviewModal
+          isOpen={true}
+          sph={printData.data}
+          onClose={() => setPrintData(null)}
+          onConvertToInvoice={sph => {
+            setPrintData(null);
+            setCurrentTab('penjualan');
+            showToast(`SPH ${sph.code} siap dikonversi ke Faktur.`);
+          }}
+          onNotify={showToast}
+        />
+      )}
+
+      {/* PRINT PREVIEW MODAL UNTUK DOKUMEN LAINNYA (SPK, NOTA, INVOICE, DO, RECEIPT) */}
+      {printData && printData.type !== 'sph' && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:p-0 print:bg-white print:static print:inset-auto">
           <div className="bg-white rounded-2xl max-w-4xl w-full p-6 md:p-8 shadow-2xl max-h-[92vh] overflow-y-auto custom-scrollbar text-xs print:max-h-none print:shadow-none print:p-0 print:border-none">
             {/* Modal Controls (Hidden in print) */}
@@ -391,8 +395,8 @@ export const App: React.FC = () => {
                 <div className="max-w-xs mx-auto font-mono text-[11px] p-4 border border-dashed border-slate-300 rounded-lg print:border-none">
                   <div className="text-center space-y-1 pb-3 border-b border-dashed border-slate-400">
                     <NjnLogo variant="icon" size="sm" className="mx-auto" />
-                    <div className="font-bold text-xs">PT. NIRWANA JAYA NUGRAHA</div>
-                    <div className="text-[9px] text-slate-500">NJN GOLD • Kios Listrik & Panel</div>
+                    <div className="font-bold text-xs">{store.getCompanySettings().companyName || 'TOKO NIRWANA JAYA NUGRAHA'}</div>
+                    <div className="text-[9px] text-slate-500">NJN • Kios Listrik & Panel</div>
                     <div className="text-[9px] text-slate-500">Jl. Soekarno Hatta No. 488 Bandung</div>
                     <div className="text-[9px] text-slate-500">Telp: (022) 731-8921</div>
                   </div>
@@ -455,7 +459,7 @@ export const App: React.FC = () => {
                   <div className="text-center pt-3 text-[9px] text-slate-500 space-y-0.5">
                     <div>Terima Kasih Atas Kunjungan Anda</div>
                     <div>Barang yang dibeli tidak dapat ditukar tanpa struk</div>
-                    <div className="font-bold font-serif text-amber-700">NJN GOLD PREMIUM ENTERPRISE</div>
+                    <div className="font-bold font-serif text-amber-700">NJN PREMIUM ENTERPRISE</div>
                   </div>
                 </div>
               )}
@@ -468,7 +472,6 @@ export const App: React.FC = () => {
                     <NjnLogo variant="print" />
                     <div className="text-right">
                       <div className="font-black text-sm font-mono text-slate-900">
-                        {printData.type === 'sph' && printData.data.code}
                         {printData.type === 'spk' && printData.data.code}
                         {printData.type === 'invoice' && printData.data.invoiceNumber}
                         {printData.type === 'nota' && printData.data.invoiceNumber}
@@ -483,7 +486,6 @@ export const App: React.FC = () => {
                   {/* Document Header Title */}
                   <div className="text-center py-2">
                     <h2 className="text-lg font-black tracking-wider uppercase underline text-slate-900 font-serif">
-                      {printData.type === 'sph' && 'SURAT PENAWARAN HARGA (SPH)'}
                       {printData.type === 'spk' && 'SURAT PERINTAH KERJA (SPK)'}
                       {printData.type === 'invoice' && 'FAKTUR PENJUALAN (SALES INVOICE)'}
                       {printData.type === 'nota' && 'NOTA PENERIMAAN BARANG & PEMBELIAN'}
@@ -511,6 +513,14 @@ export const App: React.FC = () => {
                         <div>
                           <span className="font-bold text-slate-600 block text-[10px] uppercase">Perihal / Proyek:</span>
                           <span className="font-bold text-slate-900">{printData.data.projectTitle}</span>
+                        </div>
+                      )}
+                      {printData.data.priceTier && (
+                        <div className="mt-1">
+                          <span className="font-bold text-slate-600 block text-[10px] uppercase">Kategori Tarif:</span>
+                          <span className="font-bold text-slate-900">
+                            {printData.data.priceTier === 'harga_kontraktor' ? 'Harga Kontraktor (Proyek)' : 'Harga Toko (Retail)'}
+                          </span>
                         </div>
                       )}
                       {printData.data.scope && (
@@ -578,11 +588,18 @@ export const App: React.FC = () => {
                             <span className="font-mono font-bold">{formatRupiah(printData.data.subtotal)}</span>
                           </div>
                         )}
-                        {printData.data.ppnAmount ? (
-                          <div className="flex justify-between text-emerald-800">
-                            <span>+ PPN ({printData.data.ppnRate || 11}%):</span>
-                            <span className="font-mono font-bold">+{formatRupiah(printData.data.ppnAmount)}</span>
-                          </div>
+                        {printData.data.ppnAmount !== undefined ? (
+                          printData.data.ppnAmount > 0 ? (
+                            <div className="flex justify-between text-emerald-800 font-semibold">
+                              <span>+ PPN ({printData.data.ppnRate || 11}%):</span>
+                              <span className="font-mono font-bold">+{formatRupiah(printData.data.ppnAmount)}</span>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between text-slate-500">
+                              <span>Pajak PPN:</span>
+                              <span className="font-mono font-bold">Non-PPN (Rp 0)</span>
+                            </div>
+                          )
                         ) : printData.data.taxPpn ? (
                           <div className="flex justify-between text-emerald-800">
                             <span>+ PPN ({printData.data.ppnRate !== undefined ? printData.data.ppnRate : 11}%):</span>
@@ -631,12 +648,12 @@ export const App: React.FC = () => {
                     </div>
                     <div>
                       <div className="text-slate-500 mb-16">
-                        PT. Nirwana Jaya Nugraha
+                        {store.getCompanySettings().companyName || 'TOKO NIRWANA JAYA NUGRAHA'}
                       </div>
                       <div className="border-t border-slate-400 pt-1 font-bold text-slate-900">
-                        H. Asep Supriatna, S.T.
+                        Rudi Ruhdiana
                       </div>
-                      <div className="text-[10px] text-slate-500">Direktur Utama</div>
+                      <div className="text-[10px] text-slate-500">Owner / Pemilik Toko</div>
                     </div>
                   </div>
                 </div>
