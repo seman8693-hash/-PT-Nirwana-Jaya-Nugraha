@@ -6,4 +6,8 @@ dist/
 .eman-launch.json
 .dev.vars
 dev-server.log
+.dev.vars
+dev-server.log
+package-lock.json
+
 

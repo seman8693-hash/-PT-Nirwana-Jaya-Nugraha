@@ -290,6 +290,29 @@ class Store {
     }
   }
 
+  /** Snapshot state saat ini - dipakai lapisan sinkronisasi (api/sync.ts). */
+  public getState(): AppState {
+    return this.state;
+  }
+
+  /**
+   * Terapkan data hasil hydrate dari server ke state lokal lalu simpan.
+   * Koleksi yang tidak disebut dalam partial tetap dipertahankan.
+   */
+  public hydrateState(partial: Partial<AppState>): void {
+    this.state = { ...this.state, ...partial };
+    this.save();
+  }
+
+  /**
+   * Sakelar auto-sync (legacy API dari LoginGate).
+   * Versi ini hanya membaca data server sekali saat login (hydrate),
+   * jadi sakelar ini dipertahankan sebagai no-op agar kompatibel.
+   */
+  public setSyncEnabled(_enabled: boolean): void {
+    /* tidak ada auto-sync - flush manual lewat api/sync.ts bila diperlukan */
+  }
+
   public subscribe(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);

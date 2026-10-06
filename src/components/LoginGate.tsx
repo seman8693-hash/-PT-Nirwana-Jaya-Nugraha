@@ -58,6 +58,8 @@ export const LoginGate: React.FC<{ children: React.ReactNode }> = ({ children })
         setUser(res.user);
         await hydrate(p => store.hydrateState(p), store.getState());
         store.setSyncEnabled(true);
+        // Tandai sesi lokal agar App tidak meminta login kedua kalinya.
+        localStorage.setItem('njn_auth_logged_in', 'true');
       } catch {
         setToken(null);
       } finally {
@@ -87,6 +89,8 @@ export const LoginGate: React.FC<{ children: React.ReactNode }> = ({ children })
       const local = store.getState();
       const { seeded } = await hydrate(p => store.hydrateState(p), local);
       store.setSyncEnabled(true);
+      // Lewati layar login lokal di App (LoginScreen) - sesi sudah aktif.
+      localStorage.setItem('njn_auth_logged_in', 'true');
 
       setNotice(seeded
         ? 'Server masih kosong - data contoh dari perangkat ini diunggah ke database.'
