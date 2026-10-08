@@ -24,7 +24,7 @@ import { store } from '../store';
 import { NjnLogo } from './NjnLogo';
 import { formatRupiah, formatDate } from '../utils/format';
 import { terbilang } from '../utils/terbilang';
-import { downloadSphPdf, printHtmlViaIframe } from '../utils/pdfGenerator';
+import { downloadSphPdf, printHtmlViaIframeFixed } from '../utils/pdfGenerator';
 import type { PaperSize, PaperOrientation } from '../utils/pdfGenerator';
 
 interface SphPreviewModalProps {
@@ -125,7 +125,7 @@ export const SphPreviewModal: React.FC<SphPreviewModalProps> = ({
 
     if (documentRef.current) {
       // Print via isolated iframe to ensure 100% clean output without modal background or UI buttons
-      printHtmlViaIframe(
+      printHtmlViaIframeFixed(
         documentRef.current.innerHTML,
         paperSize,
         orientation,

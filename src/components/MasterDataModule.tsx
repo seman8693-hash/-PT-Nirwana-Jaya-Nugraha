@@ -16,13 +16,17 @@ import {
   AlertCircle,
   LayoutGrid,
   List,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Tag,
+  PiggyBank,
+  BarChart3
 } from 'lucide-react';
 import { store } from '../store';
 import { PosProduct, Customer, Supplier, UnitMaster } from '../types';
 import { formatRupiah, formatNumber } from '../utils/format';
 import { ProductImage } from './ProductImage';
 import { ProductImageUploader } from './ProductImageUploader';
+import { categorizeProductName, normalizeCategoryName } from './CategoryManager';
 
 interface MasterDataModuleProps {
   onNotify?: (msg: string, type?: 'success' | 'error') => void;
@@ -63,6 +67,15 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
     monthlyAvgSales: 20,
     leadTimeDays: 7
   });
+
+  // NEW: Category Management State
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [categoryForm, setCategoryForm] = useState({ name: '', description: '', isActive: true });
+  const [categories, setCategories] = useState<{ id: string; name: string; description: string; isActive: boolean; createdAt: string }[]>([]);
+  const [searchCategory, setSearchCategory] = useState('');
+  const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
+  const [editingProductIdForCategory, setEditingProductIdForCategory] = useState<string | null>(null);
 
   const [customerForm, setCustomerForm] = useState({
     name: '',
@@ -317,6 +330,123 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
     setIsUnitModalOpen(false);
   };
 
+
+  // Category Management Handlers
+  const loadCategories = () => {
+    // Load categories from localStorage or use default categories
+    const saved = localStorage.getItem('njn_categories_v1');
+    if (saved) {
+      setCategories(JSON.parse(saved));
+    } else {
+      const defaultCategories = [
+        { id: 'cat-1', name: 'Panel Listrik', description: 'Panel listrik dan distribusi', isActive: true, createdAt: new Date().toISOString() },
+        { id: 'cat-2', name: 'Kabel & Kabel Listrik', description: 'Jenis-jenis kabel listrik', isActive: true, createdAt: new Date().toISOString() },
+        { id: 'cat-3', name: 'Komponen Listrik', description: 'Komponen listrik untuk instalasi', isActive: true, createdAt: new Date().toISOString() },
+        { id: 'cat-4', name: 'Jala Listrik & Instalasi', description: 'Jala listrik dan ruang instalasi', isActive: true, createdAt: new Date().toISOString() },
+        { id: 'cat-5', name: 'Lighting & Penerangan', description: 'Lampu dan sistem penerangan', isActive: true, createdAt: new Date().toISOString() },
+        { id: 'cat-6', name: 'Safety & Proteksi', description: 'Alat keselamatan listrik', isActive: true, createdAt: new Date().toISOString() },
+        { id: 'cat-7', name: 'AC & Kencana', description: 'System pendingin udara', isActive: true, createdAt: new Date().toISOString() },
+        { id: 'cat-8', name: 'Peralatan Energi', description: 'Energi terbarukan dan penyimpanan', isActive: true, createdAt: new Date().toISOString() },
+        { id: 'cat-9', name: 'Pool & Ketahanan', description: 'Komponen ketahanan dan listrik', isActive: true, createdAt: new Date().toISOString() },
+        { id: 'cat-10', name: 'Binding & Tampilan', description: 'Binding dan tampilan listrik', isActive: false, createdAt: new Date().toISOString() }
+      ];
+      setCategories(defaultCategories);
+      localStorage.setItem('njn_categories_v1', JSON.stringify(defaultCategories));
+    }
+  };
+
+  const handleSaveCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!categoryForm.name.trim()) {
+      onNotify?.('Nama kategori wajib diisi!', 'error');
+      return;
+    }
+
+    const normalizedName = normalizeCategoryName(categoryForm.name);
+    
+    // Check if category already exists
+    if (categories.some(c => c.name.toLowerCase() === normalizedName.toLowerCase())) {
+      onNotify?.(`Kategori "${normalizedName}" sudah ada!`, 'error');
+      return;
+    }
+
+    if (editingCategoryId) {
+      // Update existing category
+      const updated = categories.map(c =>
+        c.id === editingCategoryId
+          ? { ...c, name: normalizedName, description: categoryForm.description, isActive: categoryForm.isActive }
+          : c
+      );
+      setCategories(updated);
+      localStorage.setItem('njn_categories_v1', JSON.stringify(updated));
+      onNotify?.(`Kategori "${normalizedName}" diperbarui!`, 'success');
+    } else {
+      // Add new category
+      const newCategory = {
+        id: `cat-${Date.now()}`,
+        name: normalizedName,
+        description: categoryForm.description,
+        isActive: categoryForm.isActive,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...categories, newCategory];
+      setCategories(updated);
+      localStorage.setItem('njn_categories_v1', JSON.stringify(updated));
+      onNotify?.(`Kategori "${normalizedName}" berhasil ditambahkan!`, 'success');
+    }
+
+    setIsCategoryModalOpen(false);
+    setEditingCategoryId(null);
+    setCategoryForm({ name: '', description: '', isActive: true });
+  };
+
+  const handleEditCategory = (cat: { id: string; name: string; description: string; isActive: boolean }) => {
+    setEditingCategoryId(cat.id);
+    setCategoryForm({ name: cat.name, description: cat.description, isActive: cat.isActive });
+  };
+
+  const handleDeleteCategory = (id: string) => {
+    if (confirm('Yakin ingin menghapus kategori ini? Produk yang menggunakan kategori ini akan dimarkir sebagai "Lainnya".')) {
+      const updated = categories.filter(c => c.id !== id);
+      setCategories(updated);
+      localStorage.setItem('njn_categories_v1', JSON.stringify(updated));
+      onNotify?.(`Kategori dihapus!`, 'success');
+      if (editingCategoryId === id) {
+        setIsCategoryModalOpen(false);
+        setEditingCategoryId(null);
+      }
+    }
+  };
+
+  const handleSearchCategories = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchCategory(e.target.value);
+  };
+
+  // Auto-suggest categories based on product name
+  const getSuggestedCategories = (productName: string) => {
+    const suggestions = categorizeProductName(productName);
+    setSuggestedCategories(suggestions);
+  };
+
+  const handleProductNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Update product name
+    setProductForm(prev => ({ ...prev, name: value }));
+    // Auto-suggest categories
+    if (value.length >= 3) {
+      const suggestions = categorizeProductName(value);
+      setSuggestedCategories(suggestions);
+    } else {
+      setSuggestedCategories([]);
+    }
+  };
+
+  // Handle category selection with auto-suggestion
+  const handleCategorySelect = (categoryName: string) => {
+    setProductForm(prev => ({ ...prev, category: categoryName }));
+    setSuggestedCategories([]); // Clear suggestions after selection
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
@@ -331,6 +461,19 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
             Kelola katalog barang, rekanan customer, distributor supplier, master satuan, dan price-list bertingkat.
           </p>
         </div>
+
+        {/* Category Management Button */}
+        <button
+          onClick={() => {
+            loadCategories();
+            setEditingProductIdForCategory(productViewMode === 'grid' ? (products[0]?.id || null) : null);
+            setIsCategoryModalOpen(true);
+          }}
+          className="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-xs shadow-md transition"
+        >
+          <Tag className="w-4 h-4" />
+          <span>Manajemen Kategori</span>
+        </button>
 
         {/* Action Button depending on tab */}
         {activeTab === 'barang' && (
@@ -953,18 +1096,34 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Nama Barang Lengkap *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Kabel Supreme NYM 3x2.5 mm² Putih"
-                  value={productForm.name}
-                  onChange={e => setProductForm({ ...productForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-semibold"
-                />
-              </div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Barang *</label>
+                  <input
+                    type="text"
+                    value={productForm.name}
+                    onChange={handleProductNameChange}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-semibold"
+                    placeholder="Contoh: Kabel Supreme NYM 3x2.5 mmÂ² Putih"
+                  />
+                  {/* Auto-suggestion dropdown */}
+                  {suggestedCategories.length > 0 && (
+                    <div className="mt-1.5 max-h-24 overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-lg z-10">
+                      <ul className="py-1">
+                        {suggestedCategories.map((cat, idx) => (
+                          <li
+                            key={idx}
+                            onClick={() => handleCategorySelect(cat)}
+                            className="px-3 py-1.5 text-xs cursor-pointer hover:bg-amber-50 hover:text-amber-700 transition flex items-center gap-2"
+                          >
+                            <Tag className="w-3 h-3 text-amber-500" />
+                            {cat}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Kategori</label>
                   <select
@@ -980,6 +1139,27 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
                     <option value="Aksesoris Jalur Kabel">Aksesoris Jalur Kabel</option>
                     <option value="Alat Ukur Listrik">Alat Ukur Listrik</option>
                   </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Kategori Otomatis</label>
+                  {suggestedCategories.length > 0 ? (
+                    <div className="mt-1.5 max-h-24 overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-lg z-10">
+                      <ul className="py-1">
+                        {suggestedCategories.map((cat, idx) => (
+                          <li
+                            key={idx}
+                            onClick={() => handleCategorySelect(cat)}
+                            className="px-3 py-1.5 text-xs cursor-pointer hover:bg-amber-50 hover:text-amber-700 transition flex items-center gap-2"
+                          >
+                            <Tag className="w-3 h-3 text-amber-500" />
+                            {cat}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-slate-400">Ketik nama barang untuk auto-suggest kategori</span>
+                  )}
                 </div>
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Brand / Merek</label>
@@ -1304,6 +1484,106 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
           </div>
         </div>
       )}
+
+      {/* MODAL: MANAJEMEN KATEGORI */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-black text-slate-900">
+                  {editingCategoryId ? 'Edit Kategori' : 'Tambah Kategori'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setIsCategoryModalOpen(false);
+                    setEditingCategoryId(null);
+                    setCategoryForm({ name: '', description: '', isActive: true });
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Kelola kategori produk. Anda bisa membuat kategori secara manual atau menggunakan kategori otomatis berdasarkan nama produk.
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-5">
+              {/* Search Categories */}
+              {!editingCategoryId && (
+                <div>
+                  <label className="font-bold text-slate-700 block mb-2">Cari Kategori</label>
+                  <input
+                    type="text"
+                    placeholder="Cari atau filtrer kategori..."
+                    value={searchCategory}
+                    onChange={handleSearchCategories}
+                    className="w-full px-3 py-2 border rounded-xl"
+                  />
+                </div>
+              )}
+              
+              {/* Category Form */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Kategori</label>
+                <input
+                  type="text"
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl"
+                  placeholder="Contoh: Panel Listrik, Kabel, Komponen"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {editingCategoryId ? 'Edit nama kategori' : 'Input nama kategori baru'}
+                </p>
+              </div>
+              
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Deskripsi</label>
+                <textarea
+                  value={categoryForm.description}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl"
+                  rows={3}
+                  placeholder="Deskripsi singkat kategori"
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-700">Aktif</label>
+                <input
+                  type="checkbox"
+                  checked={categoryForm.isActive}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, isActive: e.target.checked })}
+                  className="toggle-checkbox"
+                />
+              </div>
+            </div>
+            
+            <div className="p-6 border-t flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setIsCategoryModalOpen(false);
+                  setEditingCategoryId(null);
+                  setCategoryForm({ name: '', description: '', isActive: true });
+                }}
+                className="px-4 py-2 border rounded-xl font-bold"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSaveCategory}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl"
+              >
+                {editingCategoryId ? 'Update Kategori' : 'Simpan Kategori'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* MODAL: TAMBAH / EDIT SATUAN */}
       {isUnitModalOpen && (

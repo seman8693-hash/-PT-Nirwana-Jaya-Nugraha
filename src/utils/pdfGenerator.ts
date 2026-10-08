@@ -499,3 +499,164 @@ export function printHtmlViaIframe(
     }
   }, 400);
 }
+
+/**
+ * Print document via a hidden, dedicated printing iframe.
+ * Avoids any parent window layout/modal clipping issues.
+ * Fixed version with proper page constraint and overflow handling.
+ */
+export function printHtmlViaIframeFixed(
+  contentHtml: string,
+  paperSize: PaperSize = 'A4',
+  orientation: PaperOrientation = 'portrait',
+  title = 'Dokumen SPH'
+): void {
+  // Remove any previous print iframe
+  const existingIframe = document.getElementById('njn-print-iframe');
+  if (existingIframe) {
+    existingIframe.remove();
+  }
+
+  let cssSize = 'A4';
+  if (paperSize === 'F4') cssSize = '215mm 330mm';
+  else if (paperSize === 'Letter') cssSize = 'letter';
+  else if (paperSize === 'A5') cssSize = 'A5';
+
+  const iframe = document.createElement('iframe');
+  iframe.id = 'njn-print-iframe';
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  iframe.style.background = '#ffffff';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow?.document;
+  if (!doc) {
+    window.print();
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 100);
+    return;
+  }
+
+  // Build print styles with overflow handling
+  const printStyles = `
+    @page {
+      size: ${cssSize} ${orientation};
+      margin: 10mm 12mm 12mm 12mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #0f172a;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      font-size: 11pt;
+    }
+    .print-container {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+    .print-container table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    .print-container th,
+    .print-container td {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      padding: 3px 4px;
+      font-size: 9pt;
+    }
+    .print-container th {
+      font-weight: 600;
+      background-color: #f3f4f6;
+      text-align: left;
+      padding: 4px 6px;
+      border: 1px solid #d1d5db;
+    }
+    .print-container tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .print-container img {
+      max-width: 100%;
+      height: auto;
+    }
+    .print-hidden, [data-print-hidden="true"] {
+      display: none !important;
+    }
+    @media print {
+      @page {
+        size: ${cssSize} ${orientation};
+        margin: 10mm 12mm 12mm 12mm;
+      }
+      .print-hidden {
+        display: none !important;
+      }
+    }
+  `;
+
+  doc.open();
+  doc.write(`
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+      <meta charset="utf-8">
+      <title>${title}</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+      <style>
+        ${printStyles}
+      </style>
+      <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-white text-slate-900">
+      <div class="print-container">
+        ${contentHtml}
+      </div>
+    </body>
+    </html>
+  `);
+  doc.close();
+
+  // Wait for fonts and layout to apply, then trigger print
+  setTimeout(() => {
+    try {
+      const iframeDoc = iframe.contentWindow?.document;
+      if (iframeDoc) {
+        // Hide body during print setup
+        iframeDoc.body.style.visibility = 'hidden';
+        const checkVisible = setInterval(() => {
+          const body = iframeDoc.body;
+          if (body && body.style.visibility !== 'visible') {
+            body.style.visibility = 'visible';
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            clearInterval(checkVisible);
+          }
+        }, 50);
+      }
+    } catch {
+      window.print();
+    }
+  }, 800);
+
+  // Cleanup after print
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 5000);
+}

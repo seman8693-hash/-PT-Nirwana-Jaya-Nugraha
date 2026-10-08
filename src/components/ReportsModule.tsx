@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { store } from '../store';
 import { formatRupiah, formatDate } from '../utils/format';
-import { printHtmlViaIframe } from '../utils/pdfGenerator';
+import { printHtmlViaIframeFixed } from '../utils/pdfGenerator';
 
 interface ReportsModuleProps {
   onNotify?: (msg: string, type?: 'success' | 'error') => void;
@@ -98,7 +98,7 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ onNotify }) => {
 
   const handlePrint = () => {
     if (reportContentRef.current) {
-      printHtmlViaIframe(
+      printHtmlViaIframeFixed(
         reportContentRef.current.innerHTML,
         'A4',
         'landscape',
