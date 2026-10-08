@@ -49,6 +49,41 @@ export const PosModule: React.FC<PosModuleProps> = ({
   const [discountNominal, setDiscountNominal] = useState(0);
   const [isTaxIncluded, setIsTaxIncluded] = useState(false);
   const [searchTermHistory, setSearchTermHistory] = useState('');
+  const [tempoDueDate, setTempoDueDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split('T')[0];
+  });
+  const [transferRefNo, setTransferRefNo] = useState('');
+  const [transferBankId, setTransferBankId] = useState('');
+  const [payTempoId, setPayTempoId] = useState<string | null>(null);
+  const [payTempoAmount, setPayTempoAmount] = useState('');
+  const [payTempoChannel, setPayTempoChannel] = useState<'tunai' | 'qris' | 'transfer'>('tunai');
+
+  const bankAccounts = store.getBankAccounts();
+  const transferBank = bankAccounts.find(b => b.id === transferBankId) || bankAccounts.find(b => b.bankName.includes('BCA')) || bankAccounts[1] || bankAccounts[0];
+
+  const handlePayTempo = (saleId: string) => {
+    const sale = posHistory.find(s => s.id === saleId);
+    if (!sale) return;
+    const remaining = sale.remainingAmount ?? Math.max(0, sale.total - sale.amountPaid);
+    setPayTempoId(saleId);
+    setPayTempoAmount(String(Math.round(remaining)));
+    setPayTempoChannel('tunai');
+  };
+
+  const handleConfirmPayTempo = () => {
+    if (!payTempoId) return;
+    const val = parseFloat(payTempoAmount) || 0;
+    if (val <= 0) {
+      onNotify?.('Nominal pelunasan harus lebih dari 0!', 'error');
+      return;
+    }
+    store.payPosTempoDebt(payTempoId, val, payTempoChannel);
+    onNotify?.(`Pelunasan tempo ${formatRupiah(val)} berhasil dicatat via ${payTempoChannel.toUpperCase()}!`, 'success');
+    setPayTempoId(null);
+    setPayTempoAmount('');
+  };
 
   const products = store.getProducts();
   const customers = store.getCustomers();
@@ -180,8 +215,12 @@ export const PosModule: React.FC<PosModuleProps> = ({
       taxPpn,
       total: grandTotal,
       paymentMethod: payMethod,
-      amountPaid: payMethod === 'tunai' ? cashVal : grandTotal,
-      change: payMethod === 'tunai' ? changeVal : 0
+      amountPaid: payMethod === 'tunai' ? cashVal : payMethod === 'tempo' ? 0 : grandTotal,
+      change: payMethod === 'tunai' ? changeVal : 0,
+      ...(payMethod === 'tempo' ? { dueDate: tempoDueDate } : {}),
+      ...(payMethod === 'transfer'
+        ? { paymentChannel: `${transferBank?.bankName || 'Bank'}${transferRefNo.trim() ? ` • Ref: ${transferRefNo.trim()}` : ''}` }
+        : {}),
     });
 
     onNotify?.(`Transaksi ${newSale.invoiceNumber} berhasil diselesaikan!`, 'success');
@@ -579,6 +618,54 @@ export const PosModule: React.FC<PosModuleProps> = ({
                 </button>
               </div>
 
+              {/* Transfer: bank tujuan + no referensi */}
+              {payMethod === 'transfer' && (
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 uppercase">Bank Tujuan</label>
+                    <select
+                      value={transferBank?.id || ''}
+                      onChange={e => setTransferBankId(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-xl font-bold text-sm"
+                    >
+                      {bankAccounts.map(b => (
+                        <option key={b.id} value={b.id}>{b.bankName} — {b.accountNumber}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 uppercase">No. Referensi / Bukti (opsional)</label>
+                    <input
+                      value={transferRefNo}
+                      onChange={e => setTransferRefNo(e.target.value)}
+                      placeholder="cth: 1234567890"
+                      className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-xl font-mono text-sm"
+                    />
+                  </div>
+                  <div className="p-2.5 bg-sky-50 rounded-xl border border-sky-200 text-[11px] font-bold text-sky-900">
+                    Transfer ke {transferBank?.bankName || 'Bank'} {transferBank?.accountNumber || ''} a.n. {transferBank?.holderName || ''} — mohon konfirmasi ke kasir.
+                  </div>
+                </div>
+              )}
+
+              {/* Tempo: jatuh tempo */}
+              {payMethod === 'tempo' && (
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-[11px] font-bold text-amber-900">
+                    Penjualan tempo dicatat sebagai PIUTANG (belum lunas) — tidak menambah kas/bank.
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 uppercase">Jatuh Tempo</label>
+                    <input
+                      type="date"
+                      value={tempoDueDate}
+                      onChange={e => setTempoDueDate(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-xl font-bold text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Tunai Quick Buttons & Kembalian */}
               {payMethod === 'tunai' && (
                 <div className="space-y-2 pt-2 border-t border-slate-100">
@@ -708,12 +795,30 @@ export const PosModule: React.FC<PosModuleProps> = ({
                         {formatRupiah(sale.total)}
                       </td>
                       <td className="py-3 px-3">
-                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 font-bold uppercase text-[10px]">
+                        <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${sale.paymentMethod === 'tempo' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800'}`}>
                           {sale.paymentMethod}
                         </span>
+                        {sale.paymentMethod === 'tempo' && (
+                          <div className={`mt-1 text-[10px] font-bold ${(sale.remainingAmount ?? (sale.total - sale.amountPaid)) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                            {(sale.remainingAmount ?? (sale.total - sale.amountPaid)) > 0
+                              ? `BELUM LUNAS • Sisa ${formatRupiah(sale.remainingAmount ?? (sale.total - sale.amountPaid))}${sale.dueDate ? ` • JT ${sale.dueDate}` : ''}`
+                              : 'LUNAS'}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3 px-3 text-center">
                         <div className="flex items-center justify-center gap-1">
+                          {sale.paymentMethod === 'tempo' && (sale.remainingAmount ?? (sale.total - sale.amountPaid)) > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => handlePayTempo(sale.id)}
+                              className="p-1.5 text-emerald-700 hover:bg-emerald-50 rounded-lg inline-flex items-center gap-1 text-[11px] font-bold"
+                              title="Catat Pelunasan Tempo"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Lunasi</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => onOpenReceipt(sale)}
                             className="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg inline-flex items-center gap-1 text-[11px] font-bold"

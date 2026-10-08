@@ -906,8 +906,14 @@ class Store {
   public recordPosSale(sale: Omit<PosTransaction, 'id' | 'invoiceNumber' | 'date' | 'time' | 'status'>): PosTransaction {
     const now = new Date();
     const invNo = `KASIR/${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}/${String(this.state.posTransactions.length + 1).padStart(4, '0')}`;
+    const isTempo = sale.paymentMethod === 'tempo';
+    const amountPaid = isTempo ? 0 : sale.amountPaid;
     const newSale: PosTransaction = {
       ...sale,
+      amountPaid,
+      change: isTempo ? 0 : sale.change,
+      paymentStatus: isTempo ? 'belum_lunas' : 'lunas',
+      remainingAmount: isTempo ? Math.max(0, sale.total - amountPaid) : 0,
       id: `pos-${Date.now()}`,
       invoiceNumber: invNo,
       date: now.toISOString().split('T')[0],
@@ -915,52 +921,159 @@ class Store {
       status: 'selesai'
     };
 
+    // Normalisasi untuk membedakan tipe pembayaran secara jelas.
+    if (sale.paymentMethod === 'tunai') {
+      newSale.amountPaid = Math.max(0, sale.amountPaid || 0);
+      newSale.change = Math.max(0, sale.change || 0);
+      newSale.paymentStatus = 'lunas';
+      newSale.remainingAmount = 0;
+    } else if (sale.paymentMethod === 'qris' || sale.paymentMethod === 'transfer') {
+      newSale.amountPaid = Math.max(0, sale.total);
+      newSale.change = 0;
+      newSale.paymentStatus = 'lunas';
+      newSale.remainingAmount = 0;
+    } else if (sale.paymentMethod === 'tempo') {
+      newSale.amountPaid = 0;
+      newSale.change = 0;
+      newSale.paymentStatus = 'belum_lunas';
+      newSale.remainingAmount = Math.max(0, sale.total - 0);
+    }
+
     // Kurangi stok barang secara otomatis
     newSale.items.forEach(it => {
       this.adjustStock(it.productId, -it.qty, `Penjualan Kasir ${invNo}`, invNo);
     });
 
-    // Tambah kas ke akun penerima
-    if (newSale.paymentMethod === 'tunai') {
-      const kasToko = this.state.bankAccounts.find(b => b.type === 'kas_toko') || this.state.bankAccounts[0];
-      if (kasToko) {
-        kasToko.balance += newSale.total;
+    if (isTempo) {
+      // TEMPO: jangan sentuh kas/bank & jangan catat arus kas masuk.
+      // Tambahkan ke piutang customer (berdasarkan nama, abaikan walk-in generik).
+      const custName = (newSale.customerName || '').trim().toLowerCase();
+      if (custName && custName !== 'pelanggan walk-in' && custName !== 'walk-in' && custName !== 'umum') {
+        const cust = this.state.customers.find(c => c.name.toLowerCase() === custName);
+        if (cust) {
+          cust.currentReceivable += (newSale.remainingAmount || 0);
+        }
       }
-    } else if (newSale.paymentMethod === 'qris' || newSale.paymentMethod === 'transfer') {
-      const bankBca = this.state.bankAccounts.find(b => b.bankName.includes('BCA')) || this.state.bankAccounts[1] || this.state.bankAccounts[0];
-      if (bankBca) {
-        bankBca.balance += newSale.total;
+      // Jurnal: Piutang Usaha (debit) vs Pendapatan (kredit)
+      this.addJournalEntry(
+        newSale.date,
+        invNo,
+        `Penjualan Tempo POS ${invNo}${newSale.dueDate ? ` (JT ${newSale.dueDate})` : ''}`,
+        'Piutang Usaha',
+        newSale.total,
+        'Pendapatan Penjualan Retail',
+        newSale.total
+      );
+    } else {
+      // Tambah kas ke akun penerima
+      if (newSale.paymentMethod === 'tunai') {
+        const kasToko = this.state.bankAccounts.find(b => b.type === 'kas_toko') || this.state.bankAccounts[0];
+        if (kasToko) {
+          kasToko.balance += newSale.total;
+        }
+      } else if (newSale.paymentMethod === 'qris' || newSale.paymentMethod === 'transfer') {
+        const bankBca = this.state.bankAccounts.find(b => b.bankName.includes('BCA')) || this.state.bankAccounts[1] || this.state.bankAccounts[0];
+        if (bankBca) {
+          bankBca.balance += newSale.total;
+        }
       }
+
+      // Catat arus kas masuk
+      this.state.cashRecords.unshift({
+        id: `csh-${Date.now()}`,
+        code: `KM-${now.getFullYear()}-${String(this.state.cashRecords.length + 1).padStart(4, '0')}`,
+        description: `Penjualan Kasir Kios ${invNo} (${newSale.customerName})`,
+        channel: newSale.paymentMethod.toUpperCase(),
+        category: 'Penjualan Kios',
+        date: newSale.date,
+        type: 'masuk',
+        amount: newSale.total,
+        referenceDocument: invNo
+      });
+
+      // Catat jurnal umum double entry
+      this.addJournalEntry(
+        newSale.date,
+        invNo,
+        `Penjualan Kios POS ${invNo}`,
+        newSale.paymentMethod === 'tunai' ? 'Kas Tunai Toko' : 'Bank BCA',
+        newSale.total,
+        'Pendapatan Penjualan Retail',
+        newSale.total
+      );
     }
 
-    // Catat arus kas masuk
+    this.state.posTransactions.unshift(newSale);
+    this.addAuditLog('Kasir POS', 'TRANSAKSI_SELESAI', `Transaksi Kasir ${invNo} senilai Rp ${newSale.total.toLocaleString('id-ID')} via ${newSale.paymentMethod.toUpperCase()}${isTempo ? ` (TEMPO, JT ${newSale.dueDate || '-'})` : ''}`);
+    this.save();
+    return newSale;
+  }
+
+  /** Pelunasan piutang tempo POS: catat kas masuk + kurangi piutang customer + jurnal. */
+  public payPosTempoDebt(
+    id: string,
+    amount: number,
+    channel: 'tunai' | 'qris' | 'transfer' = 'tunai',
+    bankId?: string
+  ): PosTransaction | null {
+    const sale = this.state.posTransactions.find(s => s.id === id);
+    if (!sale || sale.paymentMethod !== 'tempo') return null;
+    const remaining = sale.remainingAmount ?? Math.max(0, sale.total - sale.amountPaid);
+    const pay = Math.min(Math.max(0, amount), remaining);
+    if (pay <= 0) return sale;
+
+    sale.amountPaid += pay;
+    sale.remainingAmount = Math.max(0, remaining - pay);
+    sale.paymentStatus = sale.remainingAmount <= 0 ? 'lunas' : 'belum_lunas';
+
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const chanLabel = channel.toUpperCase();
+
+    // Tambah saldo kas/bank penerima
+    const bank =
+      channel === 'tunai'
+        ? this.state.bankAccounts.find(b => b.type === 'kas_toko') || this.state.bankAccounts[0]
+        : bankId
+          ? this.state.bankAccounts.find(b => b.id === bankId)
+          : this.state.bankAccounts.find(b => b.bankName.includes('BCA')) || this.state.bankAccounts[1] || this.state.bankAccounts[0];
+    if (bank) bank.balance += pay;
+
+    // Arus kas masuk pelunasan
     this.state.cashRecords.unshift({
       id: `csh-${Date.now()}`,
       code: `KM-${now.getFullYear()}-${String(this.state.cashRecords.length + 1).padStart(4, '0')}`,
-      description: `Penjualan Kasir Kios ${invNo} (${newSale.customerName})`,
-      channel: newSale.paymentMethod.toUpperCase(),
-      category: 'Penjualan Kios',
-      date: newSale.date,
+      description: `Pelunasan Tempo Kasir ${sale.invoiceNumber} (${sale.customerName})`,
+      channel: chanLabel,
+      category: 'Pelunasan Piutang Kios',
+      date: dateStr,
       type: 'masuk',
-      amount: newSale.total,
-      referenceDocument: invNo
+      amount: pay,
+      bankId: bank?.id,
+      referenceDocument: sale.invoiceNumber
     });
 
-    // Catat jurnal umum double entry
+    // Kurangi piutang customer
+    const custName = (sale.customerName || '').trim().toLowerCase();
+    if (custName) {
+      const cust = this.state.customers.find(c => c.name.toLowerCase() === custName);
+      if (cust) cust.currentReceivable = Math.max(0, cust.currentReceivable - pay);
+    }
+
+    // Jurnal: Kas/Bank (debit) vs Piutang Usaha (kredit)
     this.addJournalEntry(
-      newSale.date,
-      invNo,
-      `Penjualan Kios POS ${invNo}`,
-      newSale.paymentMethod === 'tunai' ? 'Kas Tunai Toko' : 'Bank BCA',
-      newSale.total,
-      'Pendapatan Penjualan Retail',
-      newSale.total
+      dateStr,
+      sale.invoiceNumber,
+      `Pelunasan Tempo POS ${sale.invoiceNumber}`,
+      channel === 'tunai' ? 'Kas Tunai Toko' : 'Bank BCA',
+      pay,
+      'Piutang Usaha',
+      pay
     );
 
-    this.state.posTransactions.unshift(newSale);
-    this.addAuditLog('Kasir POS', 'TRANSAKSI_SELESAI', `Transaksi Kasir ${invNo} senilai Rp ${newSale.total.toLocaleString('id-ID')} via ${newSale.paymentMethod.toUpperCase()}`);
+    this.addAuditLog('Kasir POS', 'PELUNASAN_TEMPO', `Pelunasan tempo ${sale.invoiceNumber} sebesar Rp ${pay.toLocaleString('id-ID')} via ${chanLabel}`);
     this.save();
-    return newSale;
+    return sale;
   }
 
   public deletePosTransaction(id: string): boolean {
@@ -977,6 +1090,23 @@ class Store {
 
     // Hapus catatan kas masuk terkait
     this.state.cashRecords = this.state.cashRecords.filter(c => c.referenceDocument !== sale.invoiceNumber);
+
+    if (sale.paymentMethod === 'tempo') {
+      // Kembalikan piutang customer sebesar sisa yang belum dilunasi
+      const remaining = sale.remainingAmount ?? Math.max(0, sale.total - sale.amountPaid);
+      const custName = (sale.customerName || '').trim().toLowerCase();
+      if (remaining > 0 && custName) {
+        const cust = this.state.customers.find(c => c.name.toLowerCase() === custName);
+        if (cust) cust.currentReceivable = Math.max(0, cust.currentReceivable - remaining);
+      }
+    } else {
+      // Kembalikan saldo kas/bank yang dulu bertambah
+      const bank =
+        sale.paymentMethod === 'tunai'
+          ? this.state.bankAccounts.find(b => b.type === 'kas_toko') || this.state.bankAccounts[0]
+          : this.state.bankAccounts.find(b => b.bankName.includes('BCA')) || this.state.bankAccounts[1] || this.state.bankAccounts[0];
+      if (bank) bank.balance -= sale.total;
+    }
 
     this.addAuditLog(
       'Kasir POS',

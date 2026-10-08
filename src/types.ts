@@ -113,6 +113,8 @@ export interface PosCartItem {
   customPrice?: number;
 }
 
+export type PosPaymentStatus = 'lunas' | 'belum_lunas';
+
 export interface PosTransaction {
   id: string;
   invoiceNumber: string;
@@ -137,6 +139,12 @@ export interface PosTransaction {
   paymentMethod: 'tunai' | 'qris' | 'transfer' | 'tempo';
   amountPaid: number;
   change: number;
+  /** Status pelunasan: tempo => belum_lunas, lainnya => lunas */
+  paymentStatus?: PosPaymentStatus;
+  /** Sisa tagihan (tempo): total - amountPaid */
+  remainingAmount?: number;
+  /** Tanggal jatuh tempo untuk penjualan tempo (YYYY-MM-DD) */
+  dueDate?: string;
   status: 'selesai' | 'dibatalkan';
   paymentChannel?: string;
   notes?: string;

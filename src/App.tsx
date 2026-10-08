@@ -528,14 +528,61 @@ export const App: React.FC = () => {
                       <span>TOTAL:</span>
                       <span>{formatRupiah(printData.data.total)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Bayar ({printData.data.paymentMethod}):</span>
-                      <span>{formatRupiah(printData.data.amountPaid)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Kembalian:</span>
-                      <span>{formatRupiah(printData.data.change)}</span>
-                    </div>
+                    {/* Rincian pembayaran dibedakan per metode */}
+                    {printData.data.paymentMethod === 'tempo' ? (
+                      <div className="pt-1 space-y-0.5">
+                        <div className="text-center font-black text-sm tracking-widest border-2 border-slate-900 rounded py-0.5 my-1">BELUM LUNAS</div>
+                        <div className="flex justify-between">
+                          <span>Dibayar:</span>
+                          <span>{formatRupiah(printData.data.amountPaid || 0)}</span>
+                        </div>
+                        <div className="flex justify-between font-bold">
+                          <span>Sisa Tagihan:</span>
+                          <span>{formatRupiah(printData.data.remainingAmount ?? (printData.data.total - (printData.data.amountPaid || 0)))}</span>
+                        </div>
+                        {printData.data.dueDate && (
+                          <div className="flex justify-between font-bold">
+                            <span>Jatuh Tempo:</span>
+                            <span>{printData.data.dueDate}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : printData.data.paymentMethod === 'qris' ? (
+                      <div className="pt-1 space-y-0.5">
+                        <div className="flex justify-between">
+                          <span>Bayar (QRIS):</span>
+                          <span>{formatRupiah(printData.data.amountPaid)}</span>
+                        </div>
+                        <div className="text-center font-black text-[11px] tracking-widest border border-slate-900 rounded py-0.5 my-1">LUNAS via QRIS</div>
+                        {(companySettings.qrisNmid || companySettings.qrisBank) && (
+                          <div className="text-center text-[9px]">
+                            {companySettings.qrisBank ? `${companySettings.qrisBank} ` : ''}{companySettings.qrisNmid ? `NMID: ${companySettings.qrisNmid}` : ''}
+                          </div>
+                        )}
+                      </div>
+                    ) : printData.data.paymentMethod === 'transfer' ? (
+                      <div className="pt-1 space-y-0.5">
+                        <div className="flex justify-between">
+                          <span>Transfer:</span>
+                          <span>{formatRupiah(printData.data.amountPaid)}</span>
+                        </div>
+                        {printData.data.paymentChannel && (
+                          <div className="text-[9px] break-words">Ke: {printData.data.paymentChannel}</div>
+                        )}
+                        <div className="text-center text-[9px]">Mohon tunjukkan bukti transfer ke kasir</div>
+                      </div>
+                    ) : (
+                      <div className="pt-1 space-y-0.5">
+                        <div className="flex justify-between">
+                          <span>Tunai Diterima:</span>
+                          <span>{formatRupiah(printData.data.amountPaid)}</span>
+                        </div>
+                        <div className="flex justify-between font-bold">
+                          <span>Kembalian:</span>
+                          <span>{formatRupiah(printData.data.change)}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-center pt-3 text-[9px] text-slate-500 space-y-0.5">
