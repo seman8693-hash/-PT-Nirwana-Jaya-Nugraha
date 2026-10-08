@@ -23,3 +23,84 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Production-grade Print Media Styles */
+@media print {
+  html, body, #root, #root > div {
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11pt;
+  }
+
+  /* Hide app shell chrome elements when printing */
+  aside,
+  header,
+  nav,
+  #app-sidebar,
+  #app-top-nav,
+  .print-hidden,
+  .print\:hidden,
+  [data-print-hidden="true"],
+  .animate-slide-in {
+    display: none !important;
+  }
+
+  /* Hide background main content ONLY when a print modal/sheet is open */
+  body:has([data-print-sheet="true"]) main,
+  body:has(.print-document-container) main,
+  body.has-print-modal main {
+    display: none !important;
+  }
+
+  /* When printing directly from main (reports, logs), ensure main is clean & full width */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  /* Make modal containers full page without overlay backdrops */
+  .print-modal-backdrop,
+  .fixed.inset-0:has(.print-clean-page),
+  .fixed.inset-0:has([data-print-sheet="true"]),
+  .fixed.inset-0:has(.print-document-container) {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  /* Remove backgrounds/shadows from modals and fit page */
+  .print-clean-page,
+  [data-print-sheet="true"],
+  .print-document-container {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+
+  /* Accurate color printing */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

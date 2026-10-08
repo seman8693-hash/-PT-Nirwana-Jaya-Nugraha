@@ -218,6 +218,15 @@ export const PosModule: React.FC<PosModuleProps> = ({
     h.cashierName.toLowerCase().includes(searchTermHistory.toLowerCase())
   );
 
+  const handleDeletePosSale = (sale: PosTransaction) => {
+    if (confirm(`HAPUS / BATALKAN TRANSAKSI KASIR?\n\nNomor: ${sale.invoiceNumber}\nPelanggan: ${sale.customerName}\nTotal: ${formatRupiah(sale.total)}\n\nStok barang (${sale.items.length} item) akan dikembalikan secara otomatis ke inventaris dan dicatat di audit log.`)) {
+      const ok = store.deletePosTransaction(sale.id);
+      if (ok) {
+        onNotify?.(`Transaksi kasir ${sale.invoiceNumber} berhasil dihapus & stok dikembalikan!`, 'success');
+      }
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Top Header */}
@@ -704,14 +713,24 @@ export const PosModule: React.FC<PosModuleProps> = ({
                         </span>
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <button
-                          onClick={() => onOpenReceipt(sale)}
-                          className="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg inline-flex items-center gap-1 text-[11px] font-bold"
-                          title="Cetak Ulang Struk"
-                        >
-                          <Printer className="w-3.5 h-3.5" />
-                          <span>Struk</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => onOpenReceipt(sale)}
+                            className="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg inline-flex items-center gap-1 text-[11px] font-bold"
+                            title="Cetak Ulang Struk"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span>Struk</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePosSale(sale)}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                            title="Hapus Transaksi Kasir"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

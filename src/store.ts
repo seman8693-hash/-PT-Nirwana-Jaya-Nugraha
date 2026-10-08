@@ -163,7 +163,7 @@ class Store {
           ],
           companySettings: parsed.companySettings ? {
             ...parsed.companySettings,
-            companyName: (parsed.companySettings.companyName || '').replace(/PT\.?\s*NIRWANA JAYA NUGRAHA/gi, 'TOKO NIRWANA JAYA NUGRAHA') || INITIAL_COMPANY_SETTINGS.companyName
+            companyName: (parsed.companySettings.companyName || '').replace(/^PT\.?\s*/i, 'TOKO ').replace(/PT\.?\s*NIRWANA\s*JAYA\s*NUGRAHA/gi, 'TOKO NIRWANA JAYA NUGRAHA') || INITIAL_COMPANY_SETTINGS.companyName
           } : INITIAL_COMPANY_SETTINGS,
           targetAmount: typeof parsed.targetAmount === 'number' ? parsed.targetAmount : 0,
           currentUser: parsed.currentUser
@@ -175,7 +175,7 @@ class Store {
             const lic: LicenseInfo = parsed.licenseInfo ? {
               ...INITIAL_LICENSE,
               ...parsed.licenseInfo,
-              licensedTo: (parsed.licenseInfo.licensedTo || 'TOKO NIRWANA JAYA NUGRAHA').replace(/PT\.?\s*NIRWANA JAYA NUGRAHA/gi, 'TOKO NIRWANA JAYA NUGRAHA'),
+              licensedTo: (parsed.licenseInfo.licensedTo || 'TOKO NIRWANA JAYA NUGRAHA').replace(/^PT\.?\s*/i, 'TOKO ').replace(/PT\.?\s*NIRWANA\s*JAYA\s*NUGRAHA/gi, 'TOKO NIRWANA JAYA NUGRAHA'),
               ownerName: parsed.licenseInfo.ownerName && parsed.licenseInfo.ownerName.includes('Asep') ? 'Rudi Ruhdiana' : (parsed.licenseInfo.ownerName || 'Rudi Ruhdiana')
             } : JSON.parse(JSON.stringify(INITIAL_LICENSE));
 
@@ -322,8 +322,28 @@ class Store {
     this.listeners.forEach(fn => fn());
   }
 
+  private syncEnabled: boolean = false;
+
+  public isSyncEnabled(): boolean {
+    return this.syncEnabled;
+  }
+
   // AUDIT LOG
-  public addAuditLog(module: string, action: string, details: string): void {
+  public addAuditLog(
+    module: string,
+    action: string,
+    details: string,
+    extra?: {
+      entityType?: string;
+      entityId?: string;
+      oldStatus?: string;
+      newStatus?: string;
+      oldValue?: string;
+      newValue?: string;
+      ipAddress?: string;
+      device?: string;
+    }
+  ): void {
     const log: AuditLog = {
       id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       timestamp: new Date().toISOString(),
@@ -331,14 +351,39 @@ class Store {
       userRole: this.state.currentUser.role,
       module,
       action,
-      details
+      details,
+      entityType: extra?.entityType,
+      entityId: extra?.entityId,
+      oldStatus: extra?.oldStatus,
+      newStatus: extra?.newStatus,
+      oldValue: extra?.oldValue,
+      newValue: extra?.newValue,
+      ipAddress: extra?.ipAddress || '192.168.1.10 (Local ERP)',
+      device: extra?.device || (typeof navigator !== 'undefined' ? `${navigator.platform} - Browser Desktop` : 'Workstation NJN')
     };
-    this.state.auditLogs = [log, ...this.state.auditLogs].slice(0, 500);
+    this.state.auditLogs = [log, ...this.state.auditLogs].slice(0, 1000);
     this.save();
   }
 
   public getAuditLogs(): AuditLog[] {
     return this.state.auditLogs;
+  }
+
+  public clearAuditLogs(): void {
+    const prevCount = this.state.auditLogs.length;
+    this.state.auditLogs = [
+      {
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        userName: this.state.currentUser.name,
+        userRole: this.state.currentUser.role,
+        action: 'HAPUS_LOG',
+        module: 'Log Aktivitas',
+        details: `Membersihkan ${prevCount} catatan riwayat log audit lama oleh ${this.state.currentUser.name}`,
+        entityType: 'DATABASE'
+      }
+    ];
+    this.save();
   }
 
   // USER & AUTH
@@ -670,6 +715,25 @@ class Store {
     this.save();
   }
 
+  public deleteCustomer(id: string): boolean {
+    const cust = this.state.customers.find(c => c.id === id);
+    if (!cust) return false;
+    this.state.customers = this.state.customers.filter(c => c.id !== id);
+    this.addAuditLog(
+      'Master Data',
+      'HAPUS_CUSTOMER',
+      `Menghapus data rekanan/customer: ${cust.name} (${cust.code})`,
+      {
+        entityType: 'CUSTOMER',
+        entityId: cust.code,
+        oldValue: `${cust.name} - ${cust.code}`,
+        newValue: 'Dihapus Permanen'
+      }
+    );
+    this.save();
+    return true;
+  }
+
   // 2. MASTER DATA: SUPPLIER
   public getSuppliers(): Supplier[] {
     return this.state.suppliers;
@@ -688,6 +752,34 @@ class Store {
     this.save();
   }
 
+  public deleteSupplier(id: string): boolean {
+    const sup = this.state.suppliers.find(s => s.id === id);
+    if (!sup) return false;
+    this.state.suppliers = this.state.suppliers.filter(s => s.id !== id);
+    this.addAuditLog(
+      'Master Data',
+      'HAPUS_SUPPLIER',
+      `Menghapus data supplier: ${sup.name} (${sup.code})`,
+      {
+        entityType: 'SUPPLIER',
+        entityId: sup.code,
+        oldValue: `${sup.name} - ${sup.code}`,
+        newValue: 'Dihapus Permanen'
+      }
+    );
+    this.save();
+    return true;
+  }
+
+  public updateSupplier(id: string, updates: Partial<Supplier>): void {
+    const idx = this.state.suppliers.findIndex(s => s.id === id);
+    if (idx !== -1) {
+      this.state.suppliers[idx] = { ...this.state.suppliers[idx], ...updates };
+      this.addAuditLog('Master Data', 'EDIT_SUPPLIER', `Mengubah data supplier: ${this.state.suppliers[idx].name} (${this.state.suppliers[idx].code})`);
+      this.save();
+    }
+  }
+
   // 2. MASTER DATA: SATUAN
   public getUnits(): UnitMaster[] {
     return this.state.units;
@@ -696,6 +788,22 @@ class Store {
   public addUnit(name: string, code: string): void {
     this.state.units.push({ id: `u-${Date.now()}`, name, code });
     this.save();
+  }
+
+  public updateUnit(id: string, updates: Partial<UnitMaster>): void {
+    const idx = this.state.units.findIndex(u => u.id === id);
+    if (idx !== -1) {
+      this.state.units[idx] = { ...this.state.units[idx], ...updates };
+      this.save();
+    }
+  }
+
+  public deleteUnit(id: string): boolean {
+    const unit = this.state.units.find(u => u.id === id);
+    if (!unit) return false;
+    this.state.units = this.state.units.filter(u => u.id !== id);
+    this.save();
+    return true;
   }
 
   // 3. INVENTORY: MUTASI & OPNAME
@@ -855,6 +963,36 @@ class Store {
     return newSale;
   }
 
+  public deletePosTransaction(id: string): boolean {
+    const sale = this.state.posTransactions.find(s => s.id === id);
+    if (!sale) return false;
+
+    // Kembalikan stok barang yang terjual
+    sale.items.forEach(it => {
+      this.adjustStock(it.productId, it.qty, `Pembatalan/Hapus Transaksi Kasir ${sale.invoiceNumber}`, sale.invoiceNumber);
+    });
+
+    // Hapus dari riwayat POS
+    this.state.posTransactions = this.state.posTransactions.filter(s => s.id !== id);
+
+    // Hapus catatan kas masuk terkait
+    this.state.cashRecords = this.state.cashRecords.filter(c => c.referenceDocument !== sale.invoiceNumber);
+
+    this.addAuditLog(
+      'Kasir POS',
+      'HAPUS_DOKUMEN',
+      `Menghapus transaksi kasir ${sale.invoiceNumber} (${sale.customerName}) senilai Rp ${sale.total.toLocaleString('id-ID')}`,
+      {
+        entityType: 'POS_TRANSACTION',
+        entityId: sale.invoiceNumber,
+        oldValue: `${sale.invoiceNumber} - Rp ${sale.total}`,
+        newValue: 'Dihapus & Stok Dikembalikan'
+      }
+    );
+    this.save();
+    return true;
+  }
+
   // 5. PEMBELIAN
   public getPurchaseOrders(): PurchaseOrder[] {
     return this.state.purchaseOrders;
@@ -874,8 +1012,54 @@ class Store {
     return newPO;
   }
 
+  public deletePurchaseOrder(poId: string): boolean {
+    const po = this.state.purchaseOrders.find(p => p.id === poId);
+    if (!po) return false;
+    this.state.purchaseOrders = this.state.purchaseOrders.filter(p => p.id !== poId);
+    this.addAuditLog(
+      'Pembelian',
+      'HAPUS_DOKUMEN',
+      `Menghapus Purchase Order ${po.poNumber} (${po.supplierName})`,
+      {
+        entityType: 'PO',
+        entityId: po.poNumber,
+        oldValue: `${po.poNumber} - ${po.supplierName}`,
+        newValue: 'Dihapus Permanen'
+      }
+    );
+    this.save();
+    return true;
+  }
+
+  public updatePurchaseOrder(poId: string, updates: Partial<PurchaseOrder>): PurchaseOrder | null {
+    const idx = this.state.purchaseOrders.findIndex(p => p.id === poId);
+    if (idx === -1) return null;
+    this.state.purchaseOrders[idx] = { ...this.state.purchaseOrders[idx], ...updates };
+    this.addAuditLog('Pembelian', 'EDIT_PO', `Memperbarui Purchase Order ${this.state.purchaseOrders[idx].poNumber} (${this.state.purchaseOrders[idx].supplierName})`);
+    this.save();
+    return this.state.purchaseOrders[idx];
+  }
+
   public getPurchaseInvoices(): PurchaseInvoice[] {
     return this.state.purchaseInvoices;
+  }
+
+  public deletePurchaseInvoice(id: string): boolean {
+    const inv = this.state.purchaseInvoices.find(p => p.id === id);
+    if (!inv) return false;
+    this.state.purchaseInvoices = this.state.purchaseInvoices.filter(p => p.id !== id);
+    this.addAuditLog('Pembelian', 'HAPUS_NOTA', `Menghapus Faktur/Nota Pembelian ${inv.invoiceNumber} (${inv.supplierName})`);
+    this.save();
+    return true;
+  }
+
+  public updatePurchaseInvoice(id: string, updates: Partial<PurchaseInvoice>): PurchaseInvoice | null {
+    const idx = this.state.purchaseInvoices.findIndex(p => p.id === id);
+    if (idx === -1) return null;
+    this.state.purchaseInvoices[idx] = { ...this.state.purchaseInvoices[idx], ...updates };
+    this.addAuditLog('Pembelian', 'EDIT_NOTA', `Memperbarui Nota Pembelian ${this.state.purchaseInvoices[idx].invoiceNumber}`);
+    this.save();
+    return this.state.purchaseInvoices[idx];
   }
 
   public receiveGoodsAndCreateNota(nota: Omit<PurchaseInvoice, 'id' | 'invoiceNumber'>): PurchaseInvoice {
@@ -976,9 +1160,103 @@ class Store {
       statusLabel: 'Menunggu PO / Persetujuan'
     };
     this.state.sphQuotations.unshift(newSph);
-    this.addAuditLog('Penjualan', 'BUAT_SPH', `Membuat Penawaran Harga ${code} untuk ${newSph.customerName}`);
+    this.addAuditLog('Penjualan', 'BUAT_SPH', `Membuat Penawaran Harga ${code} untuk ${newSph.customerName}`, {
+      entityType: 'SPH',
+      entityId: code,
+      newStatus: 'Menunggu PO / Persetujuan',
+      newValue: `Rp ${newSph.totalAmount.toLocaleString('id-ID')}`
+    });
     this.save();
     return newSph;
+  }
+
+  public deleteSPH(sphId: string): boolean {
+    const sph = this.state.sphQuotations.find(s => s.id === sphId);
+    if (!sph) return false;
+    this.state.sphQuotations = this.state.sphQuotations.filter(s => s.id !== sphId);
+    this.addAuditLog(
+      'Penjualan (SPH)',
+      'HAPUS_DOKUMEN',
+      `Menghapus dokumen SPH ${sph.code} (Rekanan: ${sph.customerName}, Proyek: ${sph.projectTitle}, Nilai: Rp ${sph.totalAmount.toLocaleString('id-ID')})`,
+      {
+        entityType: 'SPH',
+        entityId: sph.code,
+        oldValue: `${sph.code} - ${sph.customerName} - Rp ${sph.totalAmount.toLocaleString('id-ID')}`,
+        newValue: 'Dihapus Permanen'
+      }
+    );
+    this.save();
+    return true;
+  }
+
+  public updateSPHStatus(
+    sphId: string,
+    status: 'draft' | 'waiting_po' | 'approved' | 'rejected' | 'converted_invoice',
+    statusLabel?: string,
+    notes?: string
+  ): SPHQuotation | null {
+    const sph = this.state.sphQuotations.find(s => s.id === sphId);
+    if (!sph) return null;
+    const oldStatusLabel = sph.statusLabel || sph.status;
+    sph.status = status;
+    if (statusLabel) {
+      sph.statusLabel = statusLabel;
+    } else {
+      if (status === 'approved') sph.statusLabel = 'Disetujui Owner (Rudi Ruhdiana) - Siap PO';
+      else if (status === 'rejected') sph.statusLabel = 'Ditolak / Dibatalkan';
+      else if (status === 'waiting_po') sph.statusLabel = 'Menunggu PO / Persetujuan';
+      else if (status === 'converted_invoice') sph.statusLabel = 'Dikonversi ke SO / Invoice';
+    }
+    this.addAuditLog(
+      'Penjualan (SPH)',
+      'PERUBAHAN_STATUS',
+      `Status SPH ${sph.code} (${sph.customerName}) diubah dari [${oldStatusLabel}] menjadi [${sph.statusLabel}]. ${notes || ''}`,
+      {
+        entityType: 'SPH',
+        entityId: sph.code,
+        oldStatus: oldStatusLabel,
+        newStatus: sph.statusLabel
+      }
+    );
+    this.save();
+    return sph;
+  }
+
+  public updateSPH(sphId: string, updates: Partial<SPHQuotation>): SPHQuotation | null {
+    const idx = this.state.sphQuotations.findIndex(s => s.id === sphId);
+    if (idx === -1) return null;
+    this.state.sphQuotations[idx] = { ...this.state.sphQuotations[idx], ...updates };
+    this.addAuditLog('Penjualan (SPH)', 'EDIT_SPH', `Memperbarui dokumen SPH ${this.state.sphQuotations[idx].code} (${this.state.sphQuotations[idx].customerName})`);
+    this.save();
+    return this.state.sphQuotations[idx];
+  }
+
+  public deleteSalesOrder(soId: string): boolean {
+    const so = this.state.salesOrders.find(s => s.id === soId);
+    if (!so) return false;
+    this.state.salesOrders = this.state.salesOrders.filter(s => s.id !== soId);
+    this.addAuditLog(
+      'Penjualan (SO)',
+      'HAPUS_DOKUMEN',
+      `Menghapus Sales Order ${so.soNumber} (${so.customerName}) senilai Rp ${so.totalAmount.toLocaleString('id-ID')}`,
+      {
+        entityType: 'SO',
+        entityId: so.soNumber,
+        oldValue: `${so.soNumber} - ${so.customerName}`,
+        newValue: 'Dihapus Permanen'
+      }
+    );
+    this.save();
+    return true;
+  }
+
+  public updateSalesOrder(soId: string, updates: Partial<SalesOrder>): SalesOrder | null {
+    const idx = this.state.salesOrders.findIndex(s => s.id === soId);
+    if (idx === -1) return null;
+    this.state.salesOrders[idx] = { ...this.state.salesOrders[idx], ...updates };
+    this.addAuditLog('Penjualan (SO)', 'EDIT_SO', `Memperbarui Sales Order ${this.state.salesOrders[idx].soNumber} (${this.state.salesOrders[idx].customerName})`);
+    this.save();
+    return this.state.salesOrders[idx];
   }
 
   public convertSphToSalesOrder(sphId: string): SalesOrder {
@@ -1089,6 +1367,25 @@ class Store {
     inv.status = status;
     this.addAuditLog('Penjualan', 'UPDATE_STATUS_INVOICE', `Status Faktur ${inv.invoiceNumber} diubah ke ${status.toUpperCase()}`);
     this.save();
+  }
+
+  public deleteSalesInvoice(id: string): boolean {
+    const inv = this.state.salesInvoices.find(i => i.id === id);
+    if (!inv) return false;
+    this.state.salesInvoices = this.state.salesInvoices.filter(i => i.id !== id);
+    this.addAuditLog(
+      'Penjualan',
+      'HAPUS_DOKUMEN',
+      `Menghapus Faktur Tagihan ${inv.invoiceNumber} (${inv.customerName}) senilai Rp ${inv.totalAmount.toLocaleString('id-ID')}`,
+      {
+        entityType: 'FAKTUR',
+        entityId: inv.invoiceNumber,
+        oldValue: `${inv.invoiceNumber} - ${inv.customerName}`,
+        newValue: 'Dihapus Permanen'
+      }
+    );
+    this.save();
+    return true;
   }
 
   public getInvoiceStats(): {
@@ -1406,6 +1703,34 @@ class Store {
     this.save();
   }
 
+  public deleteSPK(id: string): boolean {
+    const spk = this.state.spkContracts.find(s => s.id === id);
+    if (!spk) return false;
+    this.state.spkContracts = this.state.spkContracts.filter(s => s.id !== id);
+    this.addAuditLog(
+      'SPK Operasional',
+      'HAPUS_DOKUMEN',
+      `Menghapus SPK Proyek ${spk.code} (${spk.partnerName})`,
+      {
+        entityType: 'SPK',
+        entityId: spk.code,
+        oldValue: `${spk.code} - ${spk.partnerName}`,
+        newValue: 'Dihapus Permanen'
+      }
+    );
+    this.save();
+    return true;
+  }
+
+  public updateSPK(id: string, updates: Partial<PKSContract>): PKSContract | null {
+    const idx = this.state.spkContracts.findIndex(s => s.id === id);
+    if (idx === -1) return null;
+    this.state.spkContracts[idx] = { ...this.state.spkContracts[idx], ...updates };
+    this.addAuditLog('SPK Operasional', 'EDIT_SPK', `Memperbarui dokumen SPK ${this.state.spkContracts[idx].code} (${this.state.spkContracts[idx].partnerName})`);
+    this.save();
+    return this.state.spkContracts[idx];
+  }
+
   // 8. PENGIRIMAN: DO & SURAT JALAN
   public getDeliveryOrders(): DeliveryOrder[] {
     return this.state.deliveryOrders;
@@ -1426,6 +1751,34 @@ class Store {
     return newDO;
   }
 
+  public deleteDeliveryOrder(id: string): boolean {
+    const d = this.state.deliveryOrders.find(item => item.id === id);
+    if (!d) return false;
+    this.state.deliveryOrders = this.state.deliveryOrders.filter(item => item.id !== id);
+    this.addAuditLog(
+      'Pengiriman',
+      'HAPUS_DOKUMEN',
+      `Menghapus Surat Jalan / DO ${d.doNumber} (${d.customerName})`,
+      {
+        entityType: 'DO',
+        entityId: d.doNumber,
+        oldValue: `${d.doNumber} - ${d.customerName}`,
+        newValue: 'Dihapus Permanen'
+      }
+    );
+    this.save();
+    return true;
+  }
+
+  public updateDeliveryOrder(id: string, updates: Partial<DeliveryOrder>): DeliveryOrder | null {
+    const idx = this.state.deliveryOrders.findIndex(d => d.id === id);
+    if (idx === -1) return null;
+    this.state.deliveryOrders[idx] = { ...this.state.deliveryOrders[idx], ...updates };
+    this.addAuditLog('Pengiriman', 'EDIT_DO', `Memperbarui Surat Jalan / DO ${this.state.deliveryOrders[idx].doNumber} (${this.state.deliveryOrders[idx].customerName})`);
+    this.save();
+    return this.state.deliveryOrders[idx];
+  }
+
   public updateDeliveryStatus(id: string, status: 'diproses' | 'dikirim' | 'diterima', recipientNotes?: string): void {
     const order = this.state.deliveryOrders.find(d => d.id === id);
     if (!order) return;
@@ -1441,8 +1794,42 @@ class Store {
     return this.state.bankAccounts;
   }
 
+  public updateBankAccount(id: string, updates: Partial<BankAccount>): void {
+    const idx = this.state.bankAccounts.findIndex(b => b.id === id);
+    if (idx !== -1) {
+      this.state.bankAccounts[idx] = { ...this.state.bankAccounts[idx], ...updates };
+      this.save();
+    }
+  }
+
+  public deleteBankAccount(id: string): boolean {
+    const b = this.state.bankAccounts.find(item => item.id === id);
+    if (!b) return false;
+    this.state.bankAccounts = this.state.bankAccounts.filter(item => item.id !== id);
+    this.save();
+    return true;
+  }
+
   public getCashRecords(): CashTransaction[] {
     return this.state.cashRecords;
+  }
+
+  public deleteCashRecord(id: string): boolean {
+    const rec = this.state.cashRecords.find(c => c.id === id);
+    if (!rec) return false;
+    this.state.cashRecords = this.state.cashRecords.filter(c => c.id !== id);
+    this.addAuditLog('Keuangan', 'HAPUS_KAS', `Menghapus transaksi arus kas ${rec.code}: ${rec.description}`);
+    this.save();
+    return true;
+  }
+
+  public updateCashRecord(id: string, updates: Partial<CashTransaction>): void {
+    const idx = this.state.cashRecords.findIndex(c => c.id === id);
+    if (idx !== -1) {
+      this.state.cashRecords[idx] = { ...this.state.cashRecords[idx], ...updates };
+      this.addAuditLog('Keuangan', 'EDIT_KAS', `Memperbarui transaksi arus kas ${this.state.cashRecords[idx].code}`);
+      this.save();
+    }
   }
 
   public addCashRecord(record: Omit<CashTransaction, 'id' | 'code'>): void {

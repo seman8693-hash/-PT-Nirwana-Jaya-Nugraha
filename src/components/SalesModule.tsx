@@ -45,10 +45,19 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
 
   // Modals
   const [isSphModalOpen, setIsSphModalOpen] = useState(false);
+  const [editingSph, setEditingSph] = useState<SPHQuotation | null>(null);
   const [selectedPreviewSph, setSelectedPreviewSph] = useState<SPHQuotation | null>(null);
   const [isPreviewSphOpen, setIsPreviewSphOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<SalesInvoice | null>(null);
+  const [editingSo, setEditingSo] = useState<SalesOrder | null>(null);
+  const [isEditSoModalOpen, setIsEditSoModalOpen] = useState(false);
+  const [soEditForm, setSoEditForm] = useState({
+    customerName: '',
+    notes: '',
+    deliveryDateTarget: '',
+    totalAmount: 0
+  });
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<'all' | 'unpaid' | 'overdue' | 'paid' | 'draft' | 'sent'>('all');
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
   const [selectedInvoiceToPay, setSelectedInvoiceToPay] = useState<SalesInvoice | null>(null);
@@ -532,6 +541,109 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
     }
   };
 
+  // Approve SPH
+  const handleApproveSph = (sph: SPHQuotation) => {
+    store.updateSPHStatus(sph.id, 'approved', 'Disetujui Owner (Rudi Ruhdiana) - Siap PO', 'Persetujuan resmi disahkan oleh Direktur Toko Rudi Ruhdiana.');
+    onNotify?.(`SPH ${sph.code} berhasil disetujui resmi oleh Owner Rudi Ruhdiana!`, 'success');
+  };
+
+  // Reject SPH
+  const handleRejectSph = (sph: SPHQuotation) => {
+    if (confirm(`Tolak / Batalkan SPH ${sph.code}?`)) {
+      store.updateSPHStatus(sph.id, 'rejected', 'Ditolak / Dibatalkan', 'Dibatalkan oleh pihak toko/klien.');
+      onNotify?.(`SPH ${sph.code} telah ditandai Ditolak / Dibatalkan`, 'error');
+    }
+  };
+
+  // Edit SPH
+  const handleOpenEditSph = (sph: SPHQuotation) => {
+    setEditingSph(sph);
+    setSphForm({
+      customerId: sph.customerId || '',
+      customerName: sph.customerName || '',
+      customerPhone: sph.customerPhone || '',
+      customerAddress: sph.customerAddress || '',
+      projectTitle: sph.projectTitle || '',
+      priceTier: sph.priceTier || 'harga_kontraktor',
+      isPpn: sph.isPpn ?? true,
+      ppnRate: sph.ppnRate ?? 11,
+      validDays: 30,
+      items: sph.items && sph.items.length > 0 ? sph.items.map((it, idx) => ({
+        id: it.id || String(idx + 1),
+        productId: it.productId || '',
+        name: it.name,
+        qty: it.qty,
+        unit: it.unit,
+        priceType: (it.priceType as any) || 'kontraktor',
+        unitPrice: it.unitPrice,
+        subtotal: it.subtotal || (it.qty * it.unitPrice)
+      })) : [
+        {
+          id: '1',
+          productId: '',
+          name: 'Material Penawaran',
+          qty: 1,
+          unit: 'Set',
+          priceType: 'kontraktor',
+          unitPrice: sph.totalAmount || 100000,
+          subtotal: sph.totalAmount || 100000
+        }
+      ],
+      termsAndConditions: sph.termsAndConditions || ''
+    });
+    setIsSphModalOpen(true);
+  };
+
+  // Delete SPH
+  const handleDeleteSph = (sph: SPHQuotation) => {
+    if (confirm(`HAPUS SURAT PENAWARAN HARGA (SPH)?\n\nNomor: ${sph.code}\nRekanan: ${sph.customerName}\nProyek: ${sph.projectTitle}\nTotal: ${formatRupiah(sph.totalAmount)}\n\nDokumen akan dihapus permanen dan dicatat di Log Aktivitas Pengawasan.`)) {
+      store.deleteSPH(sph.id);
+      onNotify?.(`Dokumen SPH ${sph.code} berhasil dihapus permanen!`, 'success');
+    }
+  };
+
+  // Edit SO
+  const handleOpenEditSo = (so: SalesOrder) => {
+    setEditingSo(so);
+    setSoEditForm({
+      customerName: so.customerName,
+      notes: so.notes || '',
+      deliveryDateTarget: so.deliveryDateTarget,
+      totalAmount: so.totalAmount
+    });
+    setIsEditSoModalOpen(true);
+  };
+
+  const handleSaveEditSo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSo) return;
+    store.updateSalesOrder(editingSo.id, {
+      customerName: soEditForm.customerName,
+      notes: soEditForm.notes,
+      deliveryDateTarget: soEditForm.deliveryDateTarget,
+      totalAmount: Number(soEditForm.totalAmount) || 0
+    });
+    setIsEditSoModalOpen(false);
+    setEditingSo(null);
+    onNotify?.(`Sales Order ${editingSo.soNumber} berhasil diperbarui!`, 'success');
+  };
+
+  // Delete SO
+  const handleDeleteSo = (so: SalesOrder) => {
+    if (confirm(`HAPUS SALES ORDER?\n\nNomor: ${so.soNumber}\nRekanan: ${so.customerName}\n\nDokumen akan dihapus dan dicatat di Log Aktivitas.`)) {
+      store.deleteSalesOrder(so.id);
+      onNotify?.(`Sales Order ${so.soNumber} berhasil dihapus!`, 'success');
+    }
+  };
+
+  // Delete Invoice
+  const handleDeleteInvoice = (inv: SalesInvoice) => {
+    if (confirm(`HAPUS FAKTUR TAGIHAN?\n\nNomor: ${inv.invoiceNumber}\nRekanan: ${inv.customerName}\nNilai: ${formatRupiah(inv.totalAmount)}\n\nPenghapusan akan dicatat di Log Aktivitas Pengawasan.`)) {
+      store.deleteSalesInvoice(inv.id);
+      onNotify?.(`Faktur ${inv.invoiceNumber} berhasil dihapus!`, 'success');
+    }
+  };
+
   // Convert SO to DO
   const handleConvertSoToDo = (so: SalesOrder) => {
     if (confirm(`Terbitkan Surat Jalan (DO) untuk ${so.soNumber}?`)) {
@@ -864,6 +976,13 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
                             >
                               <Printer className="w-3.5 h-3.5" />
                             </button>
+                            <button
+                              onClick={() => handleDeleteInvoice(inv)}
+                              className="p-1 text-rose-600 hover:bg-rose-100 rounded transition cursor-pointer"
+                              title="Hapus Faktur Tagihan"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -912,15 +1031,53 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
                       {formatRupiah(sph.totalAmount)}
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                        sph.status === 'converted_invoice' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {sph.statusLabel}
-                      </span>
+                      <div className="flex flex-col items-center gap-1">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          sph.status === 'converted_invoice'
+                            ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                            : sph.status === 'approved'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : sph.status === 'rejected'
+                            ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                            : 'bg-amber-100 text-amber-800 border border-amber-300'
+                        }`}>
+                          {sph.statusLabel}
+                        </span>
+                        {sph.status === 'waiting_po' && (
+                          <>
+                            <div className="text-[10px] text-slate-500 font-medium">
+                              Menunggu: <b className="text-slate-800">Rudi Ruhdiana (Owner)</b> &amp; Rekanan
+                            </div>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => handleApproveSph(sph)}
+                                className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition shadow-xs cursor-pointer"
+                                title="Setujui SPH (Owner Rudi Ruhdiana)"
+                              >
+                                ✓ Setujui
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRejectSph(sph)}
+                                className="px-2 py-0.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold transition cursor-pointer"
+                                title="Tolak SPH"
+                              >
+                                ✕ Tolak
+                              </button>
+                            </div>
+                          </>
+                        )}
+                        {sph.status === 'approved' && (
+                          <span className="text-[10px] text-emerald-700 font-semibold">
+                            Disahkan Owner • Siap PO
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-3 text-center">
                       <div className="flex items-center justify-center gap-1.5">
-                        {sph.status === 'waiting_po' && (
+                        {(sph.status === 'waiting_po' || sph.status === 'approved') && (
                           <button
                             onClick={() => handleConvertSphToSo(sph)}
                             className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] transition cursor-pointer"
@@ -945,6 +1102,20 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
                           title="Cetak Cepat"
                         >
                           <Printer className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditSph(sph)}
+                          className="p-1 text-slate-700 hover:bg-amber-100 hover:text-amber-900 rounded-lg border border-slate-200 transition cursor-pointer"
+                          title="Edit Dokumen SPH"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSph(sph)}
+                          className="p-1 text-rose-600 hover:bg-rose-100 rounded-lg border border-rose-200 transition cursor-pointer"
+                          title="Hapus Dokumen SPH"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -993,11 +1164,25 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
                       <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => handleConvertSoToDo(so)}
-                          className="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded font-bold text-[10px] inline-flex items-center gap-1"
+                          className="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded font-bold text-[10px] inline-flex items-center gap-1 cursor-pointer"
                           title="Buat Surat Jalan DO sesuai alur SO -> DO"
                         >
                           <Truck className="w-3 h-3" />
                           <span>Buat DO</span>
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditSo(so)}
+                          className="p-1 text-slate-700 hover:bg-amber-100 hover:text-amber-900 rounded border border-slate-200 transition cursor-pointer"
+                          title="Edit Sales Order"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSo(so)}
+                          className="p-1 text-rose-600 hover:bg-rose-100 rounded transition cursor-pointer"
+                          title="Hapus Sales Order"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -1473,7 +1658,7 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900 leading-tight">
-                    Buat Surat Penawaran Harga (SPH) Baru
+                    {editingSph ? `Edit Surat Penawaran Harga (${editingSph.code})` : 'Buat Surat Penawaran Harga (SPH) Baru'}
                   </h3>
                   <p className="text-[11px] text-slate-500 font-medium">
                     TOKO NIRWANA JAYA NUGRAHA • Penawaran Pengadaan Kebutuhan Panel Listrik & Komponen
@@ -1482,7 +1667,10 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
               </div>
               <button
                 type="button"
-                onClick={() => setIsSphModalOpen(false)}
+                onClick={() => {
+                  setEditingSph(null);
+                  setIsSphModalOpen(false);
+                }}
                 className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition"
               >
                 <X className="w-5 h-5" />
@@ -1502,6 +1690,32 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
                 }
                 if (sphForm.items.length === 0 || sphForm.items.some(it => !it.name.trim())) {
                   onNotify?.('Lengkapi uraian barang yang ditawarkan!', 'error');
+                  return;
+                }
+
+                if (editingSph) {
+                  const updatedSph = store.updateSPH(editingSph.id, {
+                    customerName: sphForm.customerName,
+                    customerPhone: sphForm.customerPhone,
+                    customerAddress: sphForm.customerAddress,
+                    projectTitle: sphForm.projectTitle,
+                    priceTier: sphForm.priceTier,
+                    isPpn: sphForm.isPpn,
+                    ppnRate: sphForm.isPpn ? 11 : 0,
+                    itemsSummary: sphForm.items.map(it => `${it.qty} ${it.unit} ${it.name}`).join(', '),
+                    subtotal: sphSubtotal,
+                    ppnAmount: sphPpnAmount,
+                    totalAmount: sphTotalAmount,
+                    items: sphForm.items,
+                    termsAndConditions: sphForm.termsAndConditions
+                  });
+                  setIsSphModalOpen(false);
+                  setEditingSph(null);
+                  if (updatedSph) {
+                    setSelectedPreviewSph(updatedSph);
+                    setIsPreviewSphOpen(true);
+                  }
+                  onNotify?.(`Surat Penawaran ${editingSph.code} berhasil diperbarui!`, 'success');
                   return;
                 }
 
@@ -1970,7 +2184,10 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
               <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200">
                 <button
                   type="button"
-                  onClick={() => setIsSphModalOpen(false)}
+                  onClick={() => {
+                    setEditingSph(null);
+                    setIsSphModalOpen(false);
+                  }}
                   className="px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
                 >
                   Batal
@@ -1980,7 +2197,99 @@ export const SalesModule: React.FC<SalesModuleProps> = ({
                   className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center gap-2 cursor-pointer"
                 >
                   <FileText className="w-4 h-4 font-black" />
-                  <span>Terbitkan SPH Resmi</span>
+                  <span>{editingSph ? 'Simpan Perubahan SPH' : 'Terbitkan SPH Resmi'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT SALES ORDER (SO) */}
+      {isEditSoModalOpen && editingSo && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl text-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-purple-600" />
+                <h3 className="text-base font-black text-slate-900">
+                  Edit Sales Order ({editingSo.soNumber})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingSo(null);
+                  setIsEditSoModalOpen(false);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditSo} className="space-y-4">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Customer / Rekanan</label>
+                <input
+                  type="text"
+                  required
+                  value={soEditForm.customerName}
+                  onChange={e => setSoEditForm(prev => ({ ...prev, customerName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Target Tanggal Kirim</label>
+                <input
+                  type="date"
+                  required
+                  value={soEditForm.deliveryDateTarget}
+                  onChange={e => setSoEditForm(prev => ({ ...prev, deliveryDateTarget: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Total Nilai Pesanan (Rp)</label>
+                <input
+                  type="number"
+                  min={0}
+                  required
+                  value={soEditForm.totalAmount}
+                  onChange={e => setSoEditForm(prev => ({ ...prev, totalAmount: parseFloat(e.target.value) || 0 }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono font-bold text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Catatan / Keterangan Tambahan</label>
+                <textarea
+                  rows={3}
+                  value={soEditForm.notes}
+                  onChange={e => setSoEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                  placeholder="Catatan pengiriman, rincian teknis, dll..."
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingSo(null);
+                    setIsEditSoModalOpen(false);
+                  }}
+                  className="px-4 py-2 border border-slate-300 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow transition cursor-pointer"
+                >
+                  Simpan Perubahan SO
                 </button>
               </div>
             </form>

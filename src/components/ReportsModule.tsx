@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   FileSpreadsheet,
   Download,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { store } from '../store';
 import { formatRupiah, formatDate } from '../utils/format';
+import { printHtmlViaIframe } from '../utils/pdfGenerator';
 
 interface ReportsModuleProps {
   onNotify?: (msg: string, type?: 'success' | 'error') => void;
@@ -24,6 +25,8 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ onNotify }) => {
   const [selectedReport, setSelectedReport] = useState<
     'penjualan' | 'pembelian' | 'stok' | 'keuangan' | 'piutang' | 'hutang' | 'customer' | 'supplier' | 'pengiriman' | 'sph-spk'
   >('penjualan');
+
+  const reportContentRef = useRef<HTMLDivElement>(null);
 
   const products = store.getProducts();
   const posSales = store.getPosTransactions();
@@ -94,13 +97,22 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ onNotify }) => {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (reportContentRef.current) {
+      printHtmlViaIframe(
+        reportContentRef.current.innerHTML,
+        'A4',
+        'landscape',
+        `Laporan ${selectedReport.toUpperCase()} - Toko Nirwana Jaya Nugraha`
+      );
+    } else {
+      window.print();
+    }
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
         <div>
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-600 mb-1">
             <FileSpreadsheet className="w-4 h-4" />
@@ -115,14 +127,14 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ onNotify }) => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportCurrent}
-            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition"
+            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Export CSV</span>
           </button>
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-md transition"
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold rounded-xl text-xs shadow-md transition cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Cetak Laporan</span>
@@ -131,7 +143,7 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ onNotify }) => {
       </div>
 
       {/* Select Report Category Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 print:hidden">
         {[
           { id: 'penjualan', label: '1. Lap. Penjualan', icon: TrendingUp },
           { id: 'pembelian', label: '2. Lap. Pembelian', icon: ShoppingBag },
@@ -164,7 +176,11 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ onNotify }) => {
       </div>
 
       {/* Report Content Viewport */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+      <div 
+        ref={reportContentRef}
+        className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 print:p-0 print:border-none print-document-container"
+        data-print-sheet="true"
+      >
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
             <h3 className="text-base font-black text-slate-900 uppercase">

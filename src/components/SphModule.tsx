@@ -7,9 +7,10 @@ import { SphPreviewModal } from './SphPreviewModal';
 
 interface SphModuleProps {
   onPrintSph: (sph: SPHQuotation) => void;
+  onNotify?: (msg: string, type?: 'success' | 'error') => void;
 }
 
-export const SphModule: React.FC<SphModuleProps> = ({ onPrintSph }) => {
+export const SphModule: React.FC<SphModuleProps> = ({ onPrintSph, onNotify }) => {
   const [showModal, setShowModal] = useState(false);
   const [previewSph, setPreviewSph] = useState<SPHQuotation | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -252,9 +253,57 @@ export const SphModule: React.FC<SphModuleProps> = ({ onPrintSph }) => {
                       {formatRupiah(sph.totalAmount)}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
-                        {sph.statusLabel}
-                      </span>
+                      <div className="flex flex-col items-center gap-1">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          sph.status === 'converted_invoice'
+                            ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                            : sph.status === 'approved'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : sph.status === 'rejected'
+                            ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                            : 'bg-amber-100 text-amber-800 border border-amber-300'
+                        }`}>
+                          {sph.statusLabel}
+                        </span>
+                        {sph.status === 'waiting_po' && (
+                          <>
+                            <div className="text-[10px] text-slate-500 font-medium">
+                              Menunggu: <b className="text-slate-800">Rudi Ruhdiana (Owner)</b> &amp; Rekanan
+                            </div>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  store.updateSPHStatus(sph.id, 'approved', 'Disetujui Owner (Rudi Ruhdiana) - Siap PO');
+                                  onNotify?.(`SPH ${sph.code} berhasil disetujui resmi oleh Owner Rudi Ruhdiana!`, 'success');
+                                }}
+                                className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition shadow-xs cursor-pointer"
+                                title="Setujui SPH ini"
+                              >
+                                ✓ Setujui
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`Tolak atau batalkan SPH ${sph.code}?`)) {
+                                    store.updateSPHStatus(sph.id, 'rejected', 'Ditolak / Dibatalkan');
+                                    onNotify?.(`SPH ${sph.code} ditandai Ditolak / Dibatalkan`, 'error');
+                                  }
+                                }}
+                                className="px-2 py-0.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold transition cursor-pointer"
+                                title="Tolak SPH"
+                              >
+                                ✕ Tolak
+                              </button>
+                            </div>
+                          </>
+                        )}
+                        {sph.status === 'approved' && (
+                          <span className="text-[10px] text-emerald-700 font-semibold">
+                            Disahkan Owner • Siap PO
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
@@ -276,6 +325,19 @@ export const SphModule: React.FC<SphModuleProps> = ({ onPrintSph }) => {
                           title="Cetak Cepat"
                         >
                           <Printer className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`HAPUS SURAT PENAWARAN HARGA (SPH)?\n\nNomor: ${sph.code}\nRekanan: ${sph.customerName}\nProyek: ${sph.projectTitle}\nTotal: ${formatRupiah(sph.totalAmount)}\n\nDokumen akan dihapus permanen dan dicatat di Log Aktivitas Pengawasan.`)) {
+                              store.deleteSPH(sph.id);
+                              onNotify?.(`Dokumen SPH ${sph.code} berhasil dihapus permanen!`, 'success');
+                            }
+                          }}
+                          type="button"
+                          className="p-1.5 rounded-lg border border-rose-200 hover:bg-rose-100 text-rose-600 transition cursor-pointer"
+                          title="Hapus Dokumen SPH"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -623,6 +685,7 @@ export const SphModule: React.FC<SphModuleProps> = ({ onPrintSph }) => {
         isOpen={isPreviewOpen}
         sph={previewSph}
         onClose={() => setIsPreviewOpen(false)}
+        onNotify={onNotify}
       />
     </div>
   );

@@ -15,7 +15,8 @@ import {
   X,
   LogOut,
   Building2,
-  AlertTriangle
+  AlertTriangle,
+  History
 } from 'lucide-react';
 import { store } from '../store';
 import { NjnLogo } from './NjnLogo';
@@ -147,6 +148,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Settings,
       badge: 'Sistem',
       badgeColor: 'bg-slate-800 text-slate-400'
+    },
+    {
+      id: 'log-aktivitas',
+      num: '13',
+      label: 'Log Aktivitas',
+      sublabel: 'Audit Status, Hapus & Staf',
+      icon: History,
+      badge: `${store.getAuditLogs().length} Log`,
+      badgeColor: 'bg-rose-500/20 text-rose-300'
     }
   ];
 

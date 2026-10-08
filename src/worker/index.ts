@@ -71,7 +71,7 @@ async function bootstrap(env: Env): Promise<void> {
      (id, company_name, brand_tagline, invoice_prefix, sph_prefix, spk_prefix,
       po_prefix, do_prefix, ppn_rate, thermal_paper_width, updated_at)
      VALUES ('default', ?, ?, 'INV/NJN', 'SPH/NJN', 'SPK/NJN', 'PO/NJN', 'DO/NJN', 11, '80mm', ?)`
-  ).bind('PT. Nirwana Jaya Nugraha', 'Sistem Operasional Kios & ERP', nowIso()));
+  ).bind('TOKO NIRWANA JAYA NUGRAHA', 'Sistem Operasional Kios & ERP', nowIso()));
 
   await env.DB.batch(stmts);
 }

@@ -41,6 +41,9 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
 
   // Form states
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
+  const [editingSupplierId, setEditingSupplierId] = useState<string | null>(null);
+  const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
   const [productForm, setProductForm] = useState({
     sku: '',
     barcode: '',
@@ -182,28 +185,136 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
     }
   };
 
+  const handleOpenAddCustomer = () => {
+    setEditingCustomerId(null);
+    setCustomerForm({
+      name: '',
+      company: '',
+      phone: '',
+      email: '',
+      address: '',
+      type: 'kontraktor',
+      creditLimit: 0,
+      notes: ''
+    });
+    setIsCustomerModalOpen(true);
+  };
+
+  const handleEditCustomer = (c: Customer) => {
+    setEditingCustomerId(c.id);
+    setCustomerForm({
+      name: c.name,
+      company: c.company || '',
+      phone: c.phone || '',
+      email: c.email || '',
+      address: c.address || '',
+      type: c.type || 'kontraktor',
+      creditLimit: c.creditLimit || 0,
+      notes: ''
+    });
+    setIsCustomerModalOpen(true);
+  };
+
+  const handleDeleteCustomer = (id: string, name: string) => {
+    if (confirm(`Yakin ingin menghapus data customer / rekanan:\n${name}?`)) {
+      store.deleteCustomer(id);
+      onNotify?.(`Customer ${name} berhasil dihapus dari sistem!`, 'success');
+    }
+  };
+
   const handleSaveCustomer = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerForm.name) return;
-    store.addCustomer(customerForm);
+    if (editingCustomerId) {
+      store.updateCustomer(editingCustomerId, customerForm);
+      onNotify?.(`Data customer ${customerForm.name} berhasil diperbarui!`, 'success');
+    } else {
+      store.addCustomer(customerForm);
+      onNotify?.(`Customer baru ${customerForm.name} berhasil ditambahkan!`, 'success');
+    }
     setIsCustomerModalOpen(false);
-    onNotify?.(`Customer ${customerForm.name} berhasil ditambahkan!`, 'success');
+  };
+
+  const handleOpenAddSupplier = () => {
+    setEditingSupplierId(null);
+    setSupplierForm({
+      name: '',
+      pic: '',
+      phone: '',
+      email: '',
+      address: '',
+      bankName: 'Bank BCA',
+      bankAccount: '',
+      bankHolder: ''
+    });
+    setIsSupplierModalOpen(true);
+  };
+
+  const handleEditSupplier = (s: Supplier) => {
+    setEditingSupplierId(s.id);
+    setSupplierForm({
+      name: s.name,
+      pic: s.pic || '',
+      phone: s.phone || '',
+      email: s.email || '',
+      address: s.address || '',
+      bankName: s.bankName || 'Bank BCA',
+      bankAccount: s.bankAccount || '',
+      bankHolder: s.bankHolder || ''
+    });
+    setIsSupplierModalOpen(true);
+  };
+
+  const handleDeleteSupplier = (id: string, name: string) => {
+    if (confirm(`Yakin ingin menghapus data supplier distributor:\n${name}?`)) {
+      store.deleteSupplier(id);
+      onNotify?.(`Supplier ${name} berhasil dihapus!`, 'success');
+    }
   };
 
   const handleSaveSupplier = (e: React.FormEvent) => {
     e.preventDefault();
     if (!supplierForm.name) return;
-    store.addSupplier(supplierForm);
+    if (editingSupplierId) {
+      store.updateSupplier(editingSupplierId, supplierForm);
+      onNotify?.(`Data supplier ${supplierForm.name} berhasil diperbarui!`, 'success');
+    } else {
+      store.addSupplier(supplierForm);
+      onNotify?.(`Supplier ${supplierForm.name} berhasil ditambahkan!`, 'success');
+    }
     setIsSupplierModalOpen(false);
-    onNotify?.(`Supplier ${supplierForm.name} berhasil ditambahkan!`, 'success');
+  };
+
+  const handleOpenAddUnit = () => {
+    setEditingUnitId(null);
+    setUnitForm({ name: '', code: '' });
+    setIsUnitModalOpen(true);
+  };
+
+  const handleEditUnit = (u: UnitMaster) => {
+    setEditingUnitId(u.id);
+    setUnitForm({ name: u.name, code: u.code });
+    setIsUnitModalOpen(true);
+  };
+
+  const handleDeleteUnit = (id: string, name: string) => {
+    if (confirm(`Yakin ingin menghapus satuan ukuran "${name}"?`)) {
+      store.deleteUnit(id);
+      onNotify?.(`Satuan ${name} telah dihapus!`, 'success');
+    }
   };
 
   const handleSaveUnit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!unitForm.name || !unitForm.code) return;
-    store.addUnit(unitForm.name, unitForm.code);
+    if (editingUnitId) {
+      store.updateUnit(editingUnitId, unitForm);
+      onNotify?.(`Satuan ${unitForm.name} berhasil diperbarui!`, 'success');
+    } else {
+      store.addUnit(unitForm.name, unitForm.code);
+      onNotify?.(`Satuan ${unitForm.name} berhasil ditambahkan!`, 'success');
+    }
     setIsUnitModalOpen(false);
-    onNotify?.(`Satuan ${unitForm.name} berhasil ditambahkan!`, 'success');
   };
 
   return (
@@ -233,7 +344,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
         )}
         {activeTab === 'customer' && (
           <button
-            onClick={() => setIsCustomerModalOpen(true)}
+            onClick={handleOpenAddCustomer}
             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md transition"
           >
             <Plus className="w-4 h-4" />
@@ -242,7 +353,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
         )}
         {activeTab === 'supplier' && (
           <button
-            onClick={() => setIsSupplierModalOpen(true)}
+            onClick={handleOpenAddSupplier}
             className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md transition"
           >
             <Plus className="w-4 h-4" />
@@ -251,7 +362,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
         )}
         {activeTab === 'satuan' && (
           <button
-            onClick={() => setIsUnitModalOpen(true)}
+            onClick={handleOpenAddUnit}
             className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-md transition"
           >
             <Plus className="w-4 h-4" />
@@ -557,6 +668,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
                   <th className="py-3 px-3">Alamat</th>
                   <th className="py-3 px-3 text-right">Plafon Kredit</th>
                   <th className="py-3 px-3 text-right">Sisa Piutang Berjalan</th>
+                  <th className="py-3 px-3 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -582,6 +694,24 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
                     <td className="py-3 px-3 text-slate-600 max-w-xs truncate">{c.address}</td>
                     <td className="py-3 px-3 text-right font-mono text-slate-700">{formatRupiah(c.creditLimit)}</td>
                     <td className="py-3 px-3 text-right font-mono font-bold text-amber-600">{formatRupiah(c.currentReceivable)}</td>
+                    <td className="py-3 px-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => handleEditCustomer(c)}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          title="Edit Customer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCustomer(c.id, c.name)}
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          title="Hapus Customer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -619,6 +749,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
                   <th className="py-3 px-3">Kontak & Telepon</th>
                   <th className="py-3 px-3">Rekening Bank</th>
                   <th className="py-3 px-3 text-right">Saldo Hutang</th>
+                  <th className="py-3 px-3 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -641,6 +772,24 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
                     <td className="py-3 px-3 text-right font-mono font-bold text-rose-600">
                       {formatRupiah(s.currentPayable)}
                     </td>
+                    <td className="py-3 px-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => handleEditSupplier(s)}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          title="Edit Supplier"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSupplier(s.id, s.name)}
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          title="Hapus Supplier"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -659,12 +808,27 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {units.map(u => (
-                <div key={u.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                <div key={u.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between group hover:border-amber-300 transition">
                   <div>
                     <div className="font-bold text-slate-900 text-xs">{u.name}</div>
                     <div className="text-[10px] font-mono text-slate-400 uppercase">Kode: {u.code}</div>
                   </div>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleEditUnit(u)}
+                      className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                      title="Edit Satuan"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUnit(u.id, u.name)}
+                      className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition"
+                      title="Hapus Satuan"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -956,12 +1120,14 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
         </div>
       )}
 
-      {/* MODAL: TAMBAH CUSTOMER */}
+      {/* MODAL: TAMBAH / EDIT CUSTOMER */}
       {isCustomerModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-black text-slate-900">Tambah Customer Baru</h3>
+              <h3 className="text-base font-black text-slate-900">
+                {editingCustomerId ? 'Edit Data Customer / Rekanan' : 'Tambah Customer Baru'}
+              </h3>
               <button onClick={() => setIsCustomerModalOpen(false)} className="p-1 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
@@ -1038,7 +1204,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
                   Batal
                 </button>
                 <button type="submit" className="px-5 py-2 bg-blue-600 text-white font-bold rounded-xl shadow-md">
-                  Simpan Customer
+                  {editingCustomerId ? 'Simpan Perubahan' : 'Simpan Customer'}
                 </button>
               </div>
             </form>
@@ -1046,12 +1212,14 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
         </div>
       )}
 
-      {/* MODAL: TAMBAH SUPPLIER */}
+      {/* MODAL: TAMBAH / EDIT SUPPLIER */}
       {isSupplierModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-black text-slate-900">Tambah Supplier Distributor Baru</h3>
+              <h3 className="text-base font-black text-slate-900">
+                {editingSupplierId ? 'Edit Data Supplier Distributor' : 'Tambah Supplier Distributor Baru'}
+              </h3>
               <button onClick={() => setIsSupplierModalOpen(false)} className="p-1 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
@@ -1129,7 +1297,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
                   Batal
                 </button>
                 <button type="submit" className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl shadow-md">
-                  Simpan Supplier
+                  {editingSupplierId ? 'Simpan Perubahan' : 'Simpan Supplier'}
                 </button>
               </div>
             </form>
@@ -1137,11 +1305,13 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
         </div>
       )}
 
-      {/* MODAL: TAMBAH SATUAN */}
+      {/* MODAL: TAMBAH / EDIT SATUAN */}
       {isUnitModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
-            <h3 className="text-base font-black text-slate-900 pb-2 border-b">Tambah Satuan Ukuran</h3>
+            <h3 className="text-base font-black text-slate-900 pb-2 border-b">
+              {editingUnitId ? 'Edit Satuan Ukuran' : 'Tambah Satuan Ukuran'}
+            </h3>
             <form onSubmit={handleSaveUnit} className="mt-4 space-y-3 text-xs">
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Nama Satuan (misal: Drum, Karton)</label>
@@ -1168,7 +1338,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
                   Batal
                 </button>
                 <button type="submit" className="px-4 py-1.5 bg-slate-900 text-white font-bold rounded-xl">
-                  Simpan
+                  {editingUnitId ? 'Simpan Perubahan' : 'Simpan'}
                 </button>
               </div>
             </form>

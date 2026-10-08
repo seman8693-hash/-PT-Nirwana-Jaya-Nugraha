@@ -15,7 +15,9 @@ import {
   ArrowRight,
   ExternalLink,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { store } from '../store';
 import { DeliveryOrder, SalesInvoice } from '../types';
@@ -40,6 +42,21 @@ export const ShippingModule: React.FC<ShippingModuleProps> = ({
   const [isCreateFromInvoiceModalOpen, setIsCreateFromInvoiceModalOpen] = useState(false);
   const [selectedInvoiceForDo, setSelectedInvoiceForDo] = useState<string>('');
   const [selectedInvoiceToView, setSelectedInvoiceToView] = useState<SalesInvoice | null>(null);
+
+  // Edit DO State
+  const [editingDo, setEditingDo] = useState<DeliveryOrder | null>(null);
+  const [isEditDoModalOpen, setIsEditDoModalOpen] = useState(false);
+  const [editDoForm, setEditDoForm] = useState({
+    customerName: '',
+    destinationAddress: '',
+    driverName: '',
+    vehicleNumber: '',
+    expedition: '',
+    trackingNumber: '',
+    shippingDate: '',
+    estimatedArrival: '',
+    recipientNotes: ''
+  });
 
   const invoices = store.getInvoices();
   const customers = store.getCustomers();
@@ -112,6 +129,48 @@ export const ShippingModule: React.FC<ShippingModuleProps> = ({
     const notes = status === 'diterima' ? 'Barang telah diterima lengkap oleh PIC gudang proyek.' : undefined;
     store.updateDeliveryStatus(id, status, notes);
     onNotify?.(`Status pengiriman berhasil diperbarui ke: ${status.toUpperCase()}`, 'success');
+  };
+
+  const handleOpenEditDo = (order: DeliveryOrder) => {
+    setEditingDo(order);
+    setEditDoForm({
+      customerName: order.customerName,
+      destinationAddress: order.destinationAddress,
+      driverName: order.driverName,
+      vehicleNumber: order.vehicleNumber,
+      expedition: order.expedition,
+      trackingNumber: order.trackingNumber,
+      shippingDate: order.shippingDate,
+      estimatedArrival: order.estimatedArrival,
+      recipientNotes: order.recipientNotes || ''
+    });
+    setIsEditDoModalOpen(true);
+  };
+
+  const handleSaveEditDo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDo) return;
+    store.updateDeliveryOrder(editingDo.id, {
+      customerName: editDoForm.customerName,
+      destinationAddress: editDoForm.destinationAddress,
+      driverName: editDoForm.driverName,
+      vehicleNumber: editDoForm.vehicleNumber,
+      expedition: editDoForm.expedition,
+      trackingNumber: editDoForm.trackingNumber,
+      shippingDate: editDoForm.shippingDate,
+      estimatedArrival: editDoForm.estimatedArrival,
+      recipientNotes: editDoForm.recipientNotes
+    });
+    setIsEditDoModalOpen(false);
+    setEditingDo(null);
+    onNotify?.(`Surat Jalan ${editingDo.doNumber} berhasil diperbarui!`, 'success');
+  };
+
+  const handleDeleteDo = (order: DeliveryOrder) => {
+    if (confirm(`HAPUS SURAT JALAN (DO)?\n\nNomor: ${order.doNumber}\nCustomer: ${order.customerName}\nTujuan: ${order.destinationAddress}\n\nDokumen akan dihapus permanen.`)) {
+      store.deleteDeliveryOrder(order.id);
+      onNotify?.(`Surat Jalan ${order.doNumber} berhasil dihapus permanen!`, 'success');
+    }
   };
 
   const filteredOrders = deliveryOrders.filter(d =>
@@ -326,14 +385,29 @@ export const ShippingModule: React.FC<ShippingModuleProps> = ({
                           </select>
                         </td>
                         <td className="py-3 px-3 text-center">
-                          <button
-                            onClick={() => onPrintDo(order)}
-                            className="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg inline-flex items-center gap-1 text-[11px] font-bold"
-                            title="Cetak Surat Jalan Resmi"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                            <span>Cetak</span>
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => onPrintDo(order)}
+                              className="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg inline-flex items-center gap-1 text-[11px] font-bold"
+                              title="Cetak Surat Jalan Resmi"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleOpenEditDo(order)}
+                              className="p-1.5 text-slate-700 hover:bg-amber-100 hover:text-amber-900 rounded-lg transition cursor-pointer"
+                              title="Edit Surat Jalan (DO)"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDo(order)}
+                              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                              title="Hapus Surat Jalan"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -830,6 +904,151 @@ export const ShippingModule: React.FC<ShippingModuleProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT SURAT JALAN (DO) */}
+      {isEditDoModalOpen && editingDo && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl text-xs space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <Truck className="w-5 h-5 text-amber-600" />
+                <h3 className="text-base font-black text-slate-900">
+                  Edit Surat Jalan DO ({editingDo.doNumber})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingDo(null);
+                  setIsEditDoModalOpen(false);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditDo} className="space-y-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Customer / Rekanan *</label>
+                <input
+                  type="text"
+                  required
+                  value={editDoForm.customerName}
+                  onChange={e => setEditDoForm(prev => ({ ...prev, customerName: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-xl font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Alamat Pengiriman Tujuan *</label>
+                <textarea
+                  rows={2}
+                  required
+                  value={editDoForm.destinationAddress}
+                  onChange={e => setEditDoForm(prev => ({ ...prev, destinationAddress: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-xl"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nama Driver Armada</label>
+                  <input
+                    type="text"
+                    value={editDoForm.driverName}
+                    onChange={e => setEditDoForm(prev => ({ ...prev, driverName: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nomor Plat Polisi</label>
+                  <input
+                    type="text"
+                    value={editDoForm.vehicleNumber}
+                    onChange={e => setEditDoForm(prev => ({ ...prev, vehicleNumber: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Ekspedisi / Armada</label>
+                  <input
+                    type="text"
+                    value={editDoForm.expedition}
+                    onChange={e => setEditDoForm(prev => ({ ...prev, expedition: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nomor Resi / Tracking</label>
+                  <input
+                    type="text"
+                    value={editDoForm.trackingNumber}
+                    onChange={e => setEditDoForm(prev => ({ ...prev, trackingNumber: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tanggal Pengiriman</label>
+                  <input
+                    type="date"
+                    required
+                    value={editDoForm.shippingDate}
+                    onChange={e => setEditDoForm(prev => ({ ...prev, shippingDate: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Estimasi Tiba</label>
+                  <input
+                    type="date"
+                    required
+                    value={editDoForm.estimatedArrival}
+                    onChange={e => setEditDoForm(prev => ({ ...prev, estimatedArrival: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Catatan Penerimaan / PIC Gudang</label>
+                <textarea
+                  rows={2}
+                  value={editDoForm.recipientNotes}
+                  onChange={e => setEditDoForm(prev => ({ ...prev, recipientNotes: e.target.value }))}
+                  placeholder="Catatan penerimaan barang, nomor BAST, dll..."
+                  className="w-full px-3 py-2 border rounded-xl"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingDo(null);
+                    setIsEditDoModalOpen(false);
+                  }}
+                  className="px-4 py-2 border rounded-xl font-bold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
+                >
+                  Simpan Perubahan DO
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

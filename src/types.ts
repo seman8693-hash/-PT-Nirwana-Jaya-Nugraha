@@ -187,6 +187,7 @@ export interface PurchaseInvoice {
   status: 'paid' | 'unpaid';
   paymentMethod: string;
   receivedBy: string;
+  notes?: string;
 }
 
 // 6. PENJUALAN: SPH, SO, INVOICE
@@ -204,6 +205,7 @@ export interface SPHItem {
 export interface SPHQuotation {
   id: string;
   code: string;
+  customerId?: string;
   customerName: string;
   customerPhone?: string;
   customerAddress?: string;
@@ -217,7 +219,7 @@ export interface SPHQuotation {
   subtotal: number;
   ppnAmount: number;
   totalAmount: number;
-  status: 'waiting_po' | 'converted_invoice' | 'cancelled';
+  status: 'draft' | 'waiting_po' | 'approved' | 'rejected' | 'converted_invoice' | 'cancelled';
   statusLabel: string;
   items: SPHItem[];
   termsAndConditions?: string;
@@ -399,6 +401,14 @@ export interface AuditLog {
   action: string;
   module: string;
   details: string;
+  entityType?: 'SPH' | 'FAKTUR' | 'SO' | 'PO' | 'SPK' | 'DO' | 'PRODUK' | 'CUSTOMER' | 'USER' | 'LISENSI' | 'DATABASE' | string;
+  entityId?: string;
+  oldStatus?: string;
+  newStatus?: string;
+  oldValue?: string;
+  newValue?: string;
+  ipAddress?: string;
+  device?: string;
 }
 
 // 12. PENGATURAN PERUSAHAAN

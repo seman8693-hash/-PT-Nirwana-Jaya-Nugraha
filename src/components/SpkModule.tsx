@@ -9,6 +9,8 @@ import {
   Clock,
   AlertCircle,
   FileSpreadsheet,
+  Edit2,
+  Trash2,
   X
 } from 'lucide-react';
 import { store } from '../store';
@@ -32,8 +34,63 @@ export const SpkModule: React.FC<SpkModuleProps> = ({ onPrintSpk, onNotify }) =>
   );
   const [partnerType, setPartnerType] = useState('Kontraktor Mekanikal Elektrikal');
 
+  // Edit SPK State
+  const [editingSpk, setEditingSpk] = useState<PKSContract | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    partnerName: '',
+    picName: '',
+    partnerType: '',
+    scope: '',
+    contractValue: 0,
+    startDate: '',
+    endDate: '',
+    status: 'active' as 'active' | 'completed' | 'pending'
+  });
+
   const spkList = store.getSPKList();
   const customers = store.getCustomers();
+
+  const handleOpenEditSpk = (spk: PKSContract) => {
+    setEditingSpk(spk);
+    setEditForm({
+      partnerName: spk.partnerName,
+      picName: spk.picName,
+      partnerType: spk.partnerType,
+      scope: spk.scope,
+      contractValue: spk.contractValue,
+      startDate: spk.startDate,
+      endDate: spk.endDate,
+      status: spk.status
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEditSpk = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSpk) return;
+    store.updateSPK(editingSpk.id, {
+      partnerName: editForm.partnerName,
+      picName: editForm.picName,
+      partnerType: editForm.partnerType,
+      scope: editForm.scope,
+      contractValue: Number(editForm.contractValue) || 0,
+      startDate: editForm.startDate,
+      endDate: editForm.endDate,
+      status: editForm.status,
+      statusLabel: editForm.status === 'completed' ? 'Selesai 100%' : editForm.status === 'pending' ? 'Tertunda' : 'Sedang Berjalan'
+    });
+    setIsEditModalOpen(false);
+    setEditingSpk(null);
+    onNotify?.(`Dokumen SPK ${editingSpk.code} berhasil diperbarui!`, 'success');
+  };
+
+  const handleDeleteSpk = (spk: PKSContract) => {
+    if (confirm(`HAPUS SURAT PERINTAH KERJA (SPK)?\n\nNomor: ${spk.code}\nMitra: ${spk.partnerName}\nNilai: ${formatRupiah(spk.contractValue)}\n\nDokumen akan dihapus secara permanen.`)) {
+      store.deleteSPK(spk.id);
+      onNotify?.(`SPK ${spk.code} berhasil dihapus permanen!`, 'success');
+    }
+  };
 
   const handleCreateSpk = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,13 +186,27 @@ export const SpkModule: React.FC<SpkModuleProps> = ({ onPrintSpk, onNotify }) =>
                     <p className="text-xs text-slate-500">{spk.scope}</p>
                   </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <div className="flex items-center gap-1.5 self-end sm:self-auto">
                     <button
                       onClick={() => onPrintSpk(spk)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
                     >
                       <Printer className="w-3.5 h-3.5" />
-                      <span>Cetak Dokumen SPK</span>
+                      <span>Cetak</span>
+                    </button>
+                    <button
+                      onClick={() => handleOpenEditSpk(spk)}
+                      className="p-1.5 text-slate-700 hover:bg-amber-100 hover:text-amber-900 rounded-xl border border-slate-200 transition cursor-pointer"
+                      title="Edit Surat Perintah Kerja (SPK)"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSpk(spk)}
+                      className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-xl border border-rose-200 transition cursor-pointer"
+                      title="Hapus SPK"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -291,15 +362,143 @@ export const SpkModule: React.FC<SpkModuleProps> = ({ onPrintSpk, onNotify }) =>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border rounded-xl font-bold"
+                  className="px-4 py-2 border rounded-xl font-bold cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl shadow-md"
+                  className="px-5 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl shadow-md cursor-pointer"
                 >
                   Terbitkan SPK
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT SPK */}
+      {isEditModalOpen && editingSpk && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl text-xs space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-cyan-600" />
+                <h3 className="text-base font-black text-slate-900">
+                  Edit Surat Perintah Kerja ({editingSpk.code})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingSpk(null);
+                  setIsEditModalOpen(false);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditSpk} className="space-y-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Mitra / Klien Rekanan *</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.partnerName}
+                  onChange={e => setEditForm(prev => ({ ...prev, partnerName: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-xl font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Lingkup & Spesifikasi Pekerjaan *</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={editForm.scope}
+                  onChange={e => setEditForm(prev => ({ ...prev, scope: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-xl"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">PIC Teknisi Lapangan</label>
+                  <input
+                    type="text"
+                    value={editForm.picName}
+                    onChange={e => setEditForm(prev => ({ ...prev, picName: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nilai Kontrak SPK (Rp) *</label>
+                  <input
+                    type="number"
+                    required
+                    min={0}
+                    value={editForm.contractValue}
+                    onChange={e => setEditForm(prev => ({ ...prev, contractValue: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border rounded-xl font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tanggal Mulai</label>
+                  <input
+                    type="date"
+                    required
+                    value={editForm.startDate}
+                    onChange={e => setEditForm(prev => ({ ...prev, startDate: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Target Selesai (BAST)</label>
+                  <input
+                    type="date"
+                    required
+                    value={editForm.endDate}
+                    onChange={e => setEditForm(prev => ({ ...prev, endDate: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Status Pengerjaan</label>
+                <select
+                  value={editForm.status}
+                  onChange={e => setEditForm(prev => ({ ...prev, status: e.target.value as any }))}
+                  className="w-full px-3 py-2 border rounded-xl font-bold bg-white"
+                >
+                  <option value="active">Sedang Berjalan (Active)</option>
+                  <option value="completed">Selesai 100% (Completed)</option>
+                  <option value="pending">Tertunda / Review (Pending)</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingSpk(null);
+                    setIsEditModalOpen(false);
+                  }}
+                  className="px-4 py-2 border rounded-xl font-bold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl shadow-md cursor-pointer"
+                >
+                  Simpan Perubahan SPK
                 </button>
               </div>
             </form>

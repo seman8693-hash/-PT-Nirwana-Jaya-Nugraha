@@ -12,18 +12,20 @@ import {
   FileCheck,
   ChevronDown,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Share2,
+  Send,
+  Copy,
+  Trash2,
+  Check
 } from 'lucide-react';
 import { SPHQuotation } from '../types';
 import { store } from '../store';
 import { NjnLogo } from './NjnLogo';
 import { formatRupiah, formatDate } from '../utils/format';
 import { terbilang } from '../utils/terbilang';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-
-export type PaperSize = 'A4' | 'F4' | 'Letter' | 'A5';
-export type PaperOrientation = 'portrait' | 'landscape';
+import { downloadSphPdf, printHtmlViaIframe } from '../utils/pdfGenerator';
+import type { PaperSize, PaperOrientation } from '../utils/pdfGenerator';
 
 interface SphPreviewModalProps {
   isOpen: boolean;
@@ -45,9 +47,61 @@ export const SphPreviewModal: React.FC<SphPreviewModalProps> = ({
   const [paperSize, setPaperSize] = useState<PaperSize>('A4');
   const [orientation, setOrientation] = useState<PaperOrientation>('portrait');
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [recipientPhone, setRecipientPhone] = useState(sph?.customerPhone || '');
+  const [isCopied, setIsCopied] = useState(false);
   const documentRef = useRef<HTMLDivElement>(null);
 
   const company = store.getCompanySettings();
+
+  // Generate format pesan penawaran resmi untuk WA / Share
+  const generateShareMessage = () => {
+    if (!sph) return '';
+    const itemLines = sph.items.map((it, idx) => `${idx + 1}. ${it.name} (${it.qty} ${it.unit}) - ${formatRupiah(it.subtotal)}`).join('\n');
+    return `*SURAT PENAWARAN HARGA (SPH) RESMI*\n*TOKO NIRWANA JAYA NUGRAHA*\nSpesialis Perakitan Panel Distribusi & Komponen Listrik\n───────────────────────\nKepada Yth. Bapak/Ibu: *${sph.customerName}*\nNo. SPH: *${sph.code}*\nTanggal: ${formatDate(sph.date)}\nProyek: *${sph.projectTitle}*\nMasa Berlaku: s.d. ${formatDate(sph.validUntil)}\n\n*Rincian Penawaran:*\n${itemLines}\n\nSubtotal: ${formatRupiah(sph.subtotal)}\n${sph.isPpn !== false ? `PPN (11%): ${formatRupiah(sph.ppnAmount)}\n` : ''}*TOTAL PENAWARAN: ${formatRupiah(sph.totalAmount)}*\n\n*Syarat & Ketentuan:*\n1. Penawaran berlaku 30 hari kalender.\n2. Waktu fabrikasi / pengiriman 3-7 hari kerja setelah PO resmi diterima.\n3. Pembayaran via Transfer Rekening Resmi Toko Nirwana Jaya Nugraha.\n\nTerima kasih atas kerja sama dan kepercayaannya.\nHormat Kami,\n*Rudi Ruhdiana* (Owner / Pemilik Toko)\nToko Nirwana Jaya Nugraha`;
+  };
+
+  const handleCopyShareText = () => {
+    const text = generateShareMessage();
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    onNotify?.('Format pesan penawaran SPH berhasil disalin ke clipboard!', 'success');
+    setTimeout(() => setIsCopied(false), 2500);
+  };
+
+  const handleSendWhatsApp = () => {
+    const phone = recipientPhone.replace(/[^0-9]/g, '');
+    let formattedPhone = phone;
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '62' + formattedPhone.substring(1);
+    } else if (!formattedPhone.startsWith('62')) {
+      formattedPhone = '62' + formattedPhone;
+    }
+    const text = encodeURIComponent(generateShareMessage());
+    const waUrl = `https://wa.me/${formattedPhone}?text=${text}`;
+    window.open(waUrl, '_blank');
+    onNotify?.(`Membuka WhatsApp untuk mengirim SPH ke ${sph.customerName}...`, 'success');
+  };
+
+  const handleDeleteThisSph = () => {
+    if (confirm(`HAPUS SPH INI SECARA PERMANEN?\n\nNomor: ${sph.code}\nRekanan: ${sph.customerName}\nTotal: ${formatRupiah(sph.totalAmount)}\n\nDokumen akan dihapus dari arsip dan dicatat di Log Aktivitas Pengawasan.`)) {
+      store.deleteSPH(sph.id);
+      onNotify?.(`Dokumen SPH ${sph.code} berhasil dihapus permanen!`, 'success');
+      onClose();
+    }
+  };
+
+  const handleApproveThisSph = () => {
+    store.updateSPHStatus(sph.id, 'approved', 'Disetujui Owner (Rudi Ruhdiana) - Siap PO', 'Disetujui langsung oleh Rudi Ruhdiana via Pratinjau.');
+    onNotify?.(`SPH ${sph.code} berhasil disetujui resmi oleh Owner Rudi Ruhdiana!`, 'success');
+  };
+
+  const handleRejectThisSph = () => {
+    if (confirm(`Tolak atau batalkan penawaran SPH ${sph.code}?`)) {
+      store.updateSPHStatus(sph.id, 'rejected', 'Ditolak / Dibatalkan', 'Dibatalkan oleh pihak toko/rekanan.');
+      onNotify?.(`SPH ${sph.code} ditandai Ditolak / Dibatalkan`, 'error');
+    }
+  };
 
   // Dimensi visual sheet preview (dalam mm / pixel representation)
   const getPaperStyles = () => {
@@ -67,94 +121,60 @@ export const SphPreviewModal: React.FC<SphPreviewModalProps> = ({
 
   // Fungsi Cetak Browser Sesuai Ukuran Kertas
   const handlePrint = () => {
-    // Injeksi style dynamic page size
-    const existingStyle = document.getElementById('dynamic-page-size-style');
-    if (existingStyle) {
-      existingStyle.remove();
-    }
+    onNotify?.(`Menyiapkan pencetakan dokumen SPH (${paperSize})...`, 'success');
 
-    let cssSize = 'A4';
-    if (paperSize === 'F4') cssSize = '215mm 330mm';
-    else if (paperSize === 'Letter') cssSize = 'letter';
-    else if (paperSize === 'A5') cssSize = 'A5';
-
-    const styleEl = document.createElement('style');
-    styleEl.id = 'dynamic-page-size-style';
-    styleEl.innerHTML = `
-      @media print {
-        @page {
-          size: ${cssSize} ${orientation};
-          margin: 10mm 12mm 12mm 12mm;
-        }
-        body {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
+    if (documentRef.current) {
+      // Print via isolated iframe to ensure 100% clean output without modal background or UI buttons
+      printHtmlViaIframe(
+        documentRef.current.innerHTML,
+        paperSize,
+        orientation,
+        `SPH - ${sph.code} - ${sph.customerName}`
+      );
+    } else {
+      // Injeksi style dynamic page size
+      const existingStyle = document.getElementById('dynamic-page-size-style');
+      if (existingStyle) {
+        existingStyle.remove();
       }
-    `;
-    document.head.appendChild(styleEl);
 
-    window.print();
+      let cssSize = 'A4';
+      if (paperSize === 'F4') cssSize = '215mm 330mm';
+      else if (paperSize === 'Letter') cssSize = 'letter';
+      else if (paperSize === 'A5') cssSize = 'A5';
+
+      const styleEl = document.createElement('style');
+      styleEl.id = 'dynamic-page-size-style';
+      styleEl.innerHTML = `
+        @media print {
+          @page {
+            size: ${cssSize} ${orientation};
+            margin: 10mm 12mm 12mm 12mm;
+          }
+          body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      `;
+      document.head.appendChild(styleEl);
+      window.print();
+    }
   };
 
   // Fungsi Unduh Dokumen sebagai PDF
   const handleDownloadPdf = async () => {
-    if (!documentRef.current) return;
     setIsDownloadingPdf(true);
-    onNotify?.('Sedang memproses pembuatan file PDF...', 'success');
+    onNotify?.('Sedang memproses unduhan file PDF...', 'success');
 
     try {
-      const element = documentRef.current;
-      
-      // Render canvas resolusi tinggi
-      const canvas = await html2canvas(element, {
-        scale: 2, // 2x scale for sharp high-res text
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-
-      // Konfigurasi ukuran jsPDF
-      let pdfFormat: any = 'a4';
-      if (paperSize === 'F4') pdfFormat = [215, 330];
-      else if (paperSize === 'Letter') pdfFormat = 'letter';
-      else if (paperSize === 'A5') pdfFormat = 'a5';
-
-      const pdf = new jsPDF({
-        orientation: orientation,
-        unit: 'mm',
-        format: pdfFormat
-      });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Halaman pertama
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
-
-      // Halaman berikutnya jika melebihi 1 halaman
-      while (heightLeft > 5) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
-      }
-
-      const cleanCode = sph.code.replace(/[\/\\?%*:|"<>]/g, '_');
-      const cleanCustomer = sph.customerName.replace(/[\/\\?%*:|"<>]/g, '_').substring(0, 20);
-      const filename = `SPH_${cleanCode}_${cleanCustomer}_${paperSize}.pdf`;
-
-      pdf.save(filename);
-      onNotify?.(`File PDF "${filename}" berhasil diunduh!`, 'success');
+      const filename = await downloadSphPdf(
+        sph,
+        documentRef.current,
+        paperSize,
+        orientation
+      );
+      onNotify?.(`File PDF "${filename}" berhasil diunduh ke perangkat Anda!`, 'success');
     } catch (err) {
       console.error('Gagal generate PDF:', err);
       onNotify?.('Terjadi kesalahan saat membuat file PDF. Silakan gunakan menu Cetak (Print to PDF).', 'error');
@@ -238,6 +258,17 @@ export const SphPreviewModal: React.FC<SphPreviewModalProps> = ({
             >
               <Download className="w-3.5 h-3.5" />
               <span>{isDownloadingPdf ? 'Membuat PDF...' : 'Download PDF'}</span>
+            </button>
+
+            {/* Tombol Bagikan ke Customer (WhatsApp / Copy) */}
+            <button
+              type="button"
+              onClick={() => setIsShareModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs shadow-md transition cursor-pointer"
+              title="Bagikan SPH ke Klien / Rekanan Baru"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Bagikan SPH</span>
             </button>
 
             {/* Tombol Cetak Sesuai Ukuran */}
@@ -468,8 +499,8 @@ export const SphPreviewModal: React.FC<SphPreviewModalProps> = ({
               </div>
             </div>
 
-            {/* KOLOM TANDA TANGAN & LEGALITAS RESMI */}
-            <div className="pt-4 border-t border-slate-300 grid grid-cols-3 gap-4 text-center text-xs mt-6">
+            {/* KOLOM TANDA TANGAN & LEGALITAS RESMI (TANPA NAMA SALES & TANPA STEMPEL) */}
+            <div className="pt-4 border-t border-slate-300 grid grid-cols-2 gap-12 text-center text-xs mt-6 max-w-2xl mx-auto">
               {/* Kolom 1: Rekanan */}
               <div>
                 <div className="text-slate-500 text-[11px] mb-14">
@@ -478,35 +509,17 @@ export const SphPreviewModal: React.FC<SphPreviewModalProps> = ({
                 <div className="border-t border-slate-400 pt-1 font-black text-slate-900">
                   ( {sph.customerName} )
                 </div>
-                <div className="text-[10px] text-slate-400">Tanda Tangan &amp; Stempel Perusahaan</div>
+                <div className="text-[10px] text-slate-400">Tanda Tangan</div>
               </div>
 
-              {/* Kolom 2: Bagian Sales / Estimator */}
+              {/* Kolom 2: Owner Rudi Ruhdiana */}
               <div>
-                <div className="text-slate-500 text-[11px] mb-14">
-                  Bagian Penjualan &amp; Estimator
-                </div>
-                <div className="border-t border-slate-400 pt-1 font-black text-slate-900">
-                  ( Fikri Ramadhan )
-                </div>
-                <div className="text-[10px] text-slate-400">Sales &amp; Estimator Proyek NJN</div>
-              </div>
-
-              {/* Kolom 3: Owner Rudi Ruhdiana */}
-              <div className="relative">
                 <div className="text-slate-500 text-[11px] mb-14">
                   Hormat Kami,<br />
                   <b>{company.companyName || 'TOKO NIRWANA JAYA NUGRAHA'}</b>
                 </div>
 
-                {/* Stempel Digital Resmi */}
-                <div className="absolute right-4 bottom-7 w-24 h-24 rounded-full border-2 border-amber-500/40 pointer-events-none flex items-center justify-center rotate-[-12deg] bg-amber-500/5">
-                  <div className="text-[8px] font-black text-amber-700/60 uppercase tracking-tighter text-center leading-tight">
-                    TOKO NIRWANA<br />JAYA NUGRAHA<br />★ RESMI ★
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-400 pt-1 font-black text-slate-900 relative z-10">
+                <div className="border-t border-slate-400 pt-1 font-black text-slate-900">
                   Rudi Ruhdiana
                 </div>
                 <div className="text-[10px] text-slate-500 font-semibold">
@@ -518,20 +531,53 @@ export const SphPreviewModal: React.FC<SphPreviewModalProps> = ({
           </div>
         </div>
 
-        {/* Bottom Status & Convert Action Bar (Hidden in Print) */}
-        <div className="bg-white px-5 py-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 print:hidden shrink-0">
-          <div className="text-xs text-slate-500 flex items-center gap-2">
-            <span className="font-bold text-slate-700">Status Penawaran:</span>
-            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-              sph.status === 'converted_invoice'
-                ? 'bg-emerald-100 text-emerald-800'
-                : 'bg-amber-100 text-amber-800'
-            }`}>
-              {sph.statusLabel || 'Menunggu Persetujuan PO / Rekanan'}
-            </span>
+        {/* Bottom Status & Action Bar (Hidden in Print) */}
+        <div className="bg-white px-5 py-3.5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 print:hidden shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="text-xs font-bold text-slate-700">Status Penawaran:</span>
+            <div className="flex items-center gap-2">
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                sph.status === 'converted_invoice'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  : sph.status === 'approved'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  : sph.status === 'rejected'
+                  ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                  : 'bg-amber-100 text-amber-800 border border-amber-300'
+              }`}>
+                {sph.statusLabel || 'Menunggu Persetujuan PO / Rekanan'}
+              </span>
+              <span className="text-[10px] text-slate-500 font-medium hidden md:inline">
+                (Otoritas: <b>Rudi Ruhdiana - Owner</b> &amp; Rekanan <b>{sph.customerName}</b>)
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Quick Approval Controls */}
+            {sph.status === 'waiting_po' && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleApproveThisSph}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1"
+                  title="Sahkan SPH sebagai Disetujui Owner Rudi Ruhdiana"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Setujui (Rudi Ruhdiana)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRejectThisSph}
+                  className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl transition cursor-pointer"
+                  title="Tolak Penawaran SPH"
+                >
+                  ✕ Tolak
+                </button>
+              </>
+            )}
+
+            {/* Convert to Invoice */}
             {onConvertToInvoice && sph.status !== 'converted_invoice' && (
               <button
                 type="button"
@@ -539,24 +585,136 @@ export const SphPreviewModal: React.FC<SphPreviewModalProps> = ({
                   onConvertToInvoice(sph);
                   onClose();
                 }}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition cursor-pointer flex items-center gap-1.5"
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
               >
-                <span>Proses ke Faktur / Invoice Penjualan</span>
+                <span>Proses ke Faktur</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
 
+            {/* Hapus SPH Permanen */}
+            <button
+              type="button"
+              onClick={handleDeleteThisSph}
+              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-300 font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-1"
+              title="Hapus SPH ini dari sistem"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Hapus SPH</span>
+            </button>
+
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition cursor-pointer"
+              className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition cursor-pointer"
             >
-              Tutup Pratinjau
+              Tutup
             </button>
           </div>
         </div>
 
       </div>
+
+      {/* MODAL BAGIKAN SPH KE KLIEN / REKANAN BARU */}
+      {isShareModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-fade-in text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    Bagikan SPH ke Klien / Customer
+                  </h3>
+                  <p className="text-[10px] text-slate-500">
+                    Kirim langsung penawaran resmi via WhatsApp atau salin format teks
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                  Nama Rekanan / Klien:
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  value={sph.customerName}
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                  Nomor WhatsApp Customer Baru / Terdaftar:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: 08123456789 atau 628123456789"
+                  value={recipientPhone}
+                  onChange={e => setRecipientPhone(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  Bisa dimasukkan nomor telepon rekanan baru yang belum tersimpan di kontak.
+                </span>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-bold text-slate-700">
+                    Pratinjau Format Pesan Penawaran:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleCopyShareText}
+                    className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>{isCopied ? 'Tersalin!' : 'Salin Pesan'}</span>
+                  </button>
+                </div>
+                <textarea
+                  readOnly
+                  rows={7}
+                  value={generateShareMessage()}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-[11px] text-slate-700 leading-relaxed resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-200 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleCopyShareText}
+                className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Salin Teks SPH</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSendWhatsApp}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Kirim via WhatsApp</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

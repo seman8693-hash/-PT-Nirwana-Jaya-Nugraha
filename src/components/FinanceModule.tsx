@@ -19,7 +19,9 @@ import {
   Printer,
   ExternalLink,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { store } from '../store';
 import { CashTransaction, BankAccount, JournalEntry, SalesInvoice, InvoicePaymentRecord } from '../types';
@@ -40,6 +42,29 @@ export const FinanceModule: React.FC<FinanceModuleProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [isCashModalOpen, setIsCashModalOpen] = useState(false);
   const [cashType, setCashType] = useState<'masuk' | 'keluar'>('masuk');
+
+  // Edit Cash Record State
+  const [editingCash, setEditingCash] = useState<CashTransaction | null>(null);
+  const [isEditCashModalOpen, setIsEditCashModalOpen] = useState(false);
+  const [editCashForm, setEditCashForm] = useState({
+    amount: '',
+    category: '',
+    channel: '',
+    description: '',
+    date: '',
+    type: 'masuk' as 'masuk' | 'keluar'
+  });
+
+  // Edit Bank Account State
+  const [editingBank, setEditingBank] = useState<BankAccount | null>(null);
+  const [isEditBankModalOpen, setIsEditBankModalOpen] = useState(false);
+  const [editBankForm, setEditBankForm] = useState({
+    bankName: '',
+    accountNumber: '',
+    holderName: '',
+    balance: 0,
+    type: 'bank' as 'kas_toko' | 'bank'
+  });
 
   // Piutang & Payment States
   const [piutangFilter, setPiutangFilter] = useState<'all' | 'unpaid' | 'overdue' | 'paid'>('all');
@@ -127,6 +152,87 @@ export const FinanceModule: React.FC<FinanceModuleProps> = ({
 
     setIsCashModalOpen(false);
     onNotify?.(`Pencatatan kas ${cashType === 'masuk' ? 'masuk' : 'keluar'} sebesar ${formatRupiah(val)} sukses!`, 'success');
+  };
+
+  // Edit & Delete Handlers for Cash
+  const handleOpenEditCash = (c: CashTransaction) => {
+    setEditingCash(c);
+    setEditCashForm({
+      amount: String(c.amount),
+      category: c.category,
+      channel: c.channel,
+      description: c.description,
+      date: c.date,
+      type: c.type
+    });
+    setIsEditCashModalOpen(true);
+  };
+
+  const handleSaveEditCash = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCash) return;
+    const val = parseFloat(editCashForm.amount);
+    if (isNaN(val) || val <= 0 || !editCashForm.description) {
+      onNotify?.('Lengkapi nominal dan keterangan transaksi!', 'error');
+      return;
+    }
+    store.updateCashRecord(editingCash.id, {
+      amount: val,
+      category: editCashForm.category,
+      channel: editCashForm.channel,
+      description: editCashForm.description,
+      date: editCashForm.date,
+      type: editCashForm.type
+    });
+    setIsEditCashModalOpen(false);
+    setEditingCash(null);
+    onNotify?.(`Transaksi kas ${editingCash.code} berhasil diperbarui!`, 'success');
+  };
+
+  const handleDeleteCash = (c: CashTransaction) => {
+    if (confirm(`HAPUS TRANSAKSI ARUS KAS?\n\nKode: ${c.code}\nKeterangan: ${c.description}\nNominal: ${formatRupiah(c.amount)} (${c.type.toUpperCase()})\n\nTransaksi akan dihapus dari buku kas.`)) {
+      store.deleteCashRecord(c.id);
+      onNotify?.(`Transaksi kas ${c.code} berhasil dihapus!`, 'success');
+    }
+  };
+
+  // Edit & Delete Handlers for Bank Account
+  const handleOpenEditBank = (b: BankAccount) => {
+    setEditingBank(b);
+    setEditBankForm({
+      bankName: b.bankName,
+      accountNumber: b.accountNumber,
+      holderName: b.holderName,
+      balance: b.balance,
+      type: b.type
+    });
+    setIsEditBankModalOpen(true);
+  };
+
+  const handleSaveEditBank = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBank) return;
+    store.updateBankAccount(editingBank.id, {
+      bankName: editBankForm.bankName,
+      accountNumber: editBankForm.accountNumber,
+      holderName: editBankForm.holderName,
+      balance: Number(editBankForm.balance) || 0,
+      type: editBankForm.type
+    });
+    setIsEditBankModalOpen(false);
+    setEditingBank(null);
+    onNotify?.(`Rekening ${editingBank.bankName} berhasil diperbarui!`, 'success');
+  };
+
+  const handleDeleteBank = (b: BankAccount) => {
+    if (confirm(`HAPUS REKENING / SALURAN KAS?\n\nBank/Kas: ${b.bankName}\nNomor Rekening: ${b.accountNumber}\nSaldo: ${formatRupiah(b.balance)}\n\nRekening akan dihapus.`)) {
+      const ok = store.deleteBankAccount(b.id);
+      if (ok) {
+        onNotify?.(`Rekening ${b.bankName} berhasil dihapus!`, 'success');
+      } else {
+        onNotify?.('Minimal harus tersisa 1 rekening/kas aktif!', 'error');
+      }
+    }
   };
 
   // Open Payment Modal for Invoice in Keuangan -> Piutang
@@ -559,12 +665,13 @@ export const FinanceModule: React.FC<FinanceModuleProps> = ({
                   <th className="py-3 px-3">Akun / Saluran</th>
                   <th className="py-3 px-3 text-right">Debit (Masuk)</th>
                   <th className="py-3 px-3 text-right">Kredit (Keluar)</th>
+                  <th className="py-3 px-3 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredCash.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400">
+                    <td colSpan={8} className="py-8 text-center text-slate-400">
                       Belum ada mutasi arus kas tercatat. Klik "+ Kas Masuk" atau "- Kas Keluar" untuk mencatat transaksi operasional.
                     </td>
                   </tr>
@@ -590,6 +697,26 @@ export const FinanceModule: React.FC<FinanceModuleProps> = ({
                       </td>
                       <td className="py-3 px-3 text-right font-mono font-bold text-rose-600">
                         {c.type === 'keluar' ? formatRupiah(c.amount) : '-'}
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditCash(c)}
+                            className="p-1 text-slate-700 hover:bg-amber-100 hover:text-amber-900 rounded transition cursor-pointer"
+                            title="Edit Transaksi Kas"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCash(c)}
+                            className="p-1 text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
+                            title="Hapus Transaksi Kas"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -621,6 +748,24 @@ export const FinanceModule: React.FC<FinanceModuleProps> = ({
               <div className="pt-3 border-t border-slate-100 flex items-baseline justify-between">
                 <span className="text-xs text-slate-500 font-semibold">Saldo Tersedia:</span>
                 <span className="text-lg font-black font-mono text-emerald-700">{formatRupiah(b.balance)}</span>
+              </div>
+              <div className="pt-2 flex items-center justify-end gap-1.5 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => handleOpenEditBank(b)}
+                  className="px-2.5 py-1 text-slate-700 hover:bg-amber-100 hover:text-amber-900 rounded-lg border border-slate-200 text-[11px] font-bold inline-flex items-center gap-1 transition cursor-pointer"
+                >
+                  <Edit2 className="w-3 h-3" />
+                  <span>Edit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteBank(b)}
+                  className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 transition cursor-pointer"
+                  title="Hapus Rekening"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           ))}
@@ -1046,6 +1191,210 @@ export const FinanceModule: React.FC<FinanceModuleProps> = ({
                 Tutup
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT TRANSAKSI KAS */}
+      {isEditCashModalOpen && editingCash && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl text-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-amber-600" />
+                <h3 className="text-base font-black text-slate-900">
+                  Edit Transaksi Kas ({editingCash.code})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingCash(null);
+                  setIsEditCashModalOpen(false);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditCash} className="space-y-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Jenis Arus Kas</label>
+                <select
+                  value={editCashForm.type}
+                  onChange={e => setEditCashForm({ ...editCashForm, type: e.target.value as any })}
+                  className="w-full px-3 py-2 border rounded-xl font-bold bg-white"
+                >
+                  <option value="masuk">Kas Masuk (Debit)</option>
+                  <option value="keluar">Kas Keluar (Kredit)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nominal (Rp) *</label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={editCashForm.amount}
+                  onChange={e => setEditCashForm({ ...editCashForm, amount: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl font-mono text-sm font-bold text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Keterangan Transaksi *</label>
+                <input
+                  type="text"
+                  required
+                  value={editCashForm.description}
+                  onChange={e => setEditCashForm({ ...editCashForm, description: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Kategori Transaksi</label>
+                <input
+                  type="text"
+                  value={editCashForm.category}
+                  onChange={e => setEditCashForm({ ...editCashForm, category: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Akun / Saluran</label>
+                  <input
+                    type="text"
+                    value={editCashForm.channel}
+                    onChange={e => setEditCashForm({ ...editCashForm, channel: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tanggal</label>
+                  <input
+                    type="date"
+                    required
+                    value={editCashForm.date}
+                    onChange={e => setEditCashForm({ ...editCashForm, date: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingCash(null);
+                    setIsEditCashModalOpen(false);
+                  }}
+                  className="px-4 py-2 border rounded-xl font-bold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
+                >
+                  Simpan Perubahan Kas
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT REKENING BANK / KAS */}
+      {isEditBankModalOpen && editingBank && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl text-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-base font-black text-slate-900">
+                  Edit Saluran / Rekening Bank
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingBank(null);
+                  setIsEditBankModalOpen(false);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditBank} className="space-y-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Bank / Saluran Kas *</label>
+                <input
+                  type="text"
+                  required
+                  value={editBankForm.bankName}
+                  onChange={e => setEditBankForm({ ...editBankForm, bankName: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nomor Rekening</label>
+                <input
+                  type="text"
+                  value={editBankForm.accountNumber}
+                  onChange={e => setEditBankForm({ ...editBankForm, accountNumber: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Pemilik Akun (a.n)</label>
+                <input
+                  type="text"
+                  value={editBankForm.holderName}
+                  onChange={e => setEditBankForm({ ...editBankForm, holderName: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Saldo Saluran (Rp) *</label>
+                <input
+                  type="number"
+                  required
+                  min={0}
+                  value={editBankForm.balance}
+                  onChange={e => setEditBankForm({ ...editBankForm, balance: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 border rounded-xl font-mono font-bold text-emerald-700"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingBank(null);
+                    setIsEditBankModalOpen(false);
+                  }}
+                  className="px-4 py-2 border rounded-xl font-bold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow cursor-pointer"
+                >
+                  Simpan Perubahan Rekening
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

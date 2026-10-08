@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TopNav } from './components/TopNav';
 import { DashboardModule } from './components/DashboardModule';
@@ -13,6 +13,7 @@ import { FinanceModule } from './components/FinanceModule';
 import { ReportsModule } from './components/ReportsModule';
 import { UserAccessModule } from './components/UserAccessModule';
 import { SettingsModule } from './components/SettingsModule';
+import { ActivityLogModule } from './components/ActivityLogModule';
 import { RestockModal } from './components/RestockModal';
 import { QrisModal } from './components/QrisModal';
 import { NjnLogo } from './components/NjnLogo';
@@ -21,7 +22,8 @@ import { SphPreviewModal } from './components/SphPreviewModal';
 import { store } from './store';
 import { PosProduct, SalesInvoice, SPHQuotation, PKSContract, PurchaseInvoice, DeliveryOrder } from './types';
 import { formatRupiah, formatDate } from './utils/format';
-import { X, Printer, CheckCircle, Building2, LogOut, Check, Users } from 'lucide-react';
+import { printHtmlViaIframe, PaperSize } from './utils/pdfGenerator';
+import { X, Printer, CheckCircle, Building2, LogOut, Check, Users, FileText } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -47,6 +49,9 @@ export const App: React.FC = () => {
     type: 'sph' | 'spk' | 'nota' | 'invoice' | 'do' | 'receipt';
     data: any;
   } | null>(null);
+
+  const [printPaperSize, setPrintPaperSize] = useState<PaperSize>('A4');
+  const printDocumentRef = useRef<HTMLDivElement>(null);
 
   // Preselected purchase item from Restock recommendation
   const [preselectedPurchase, setPreselectedPurchase] = useState<{
@@ -85,8 +90,24 @@ export const App: React.FC = () => {
     setCurrentTab('pembelian');
   };
 
-  const handlePrintDocument = () => {
-    window.print();
+  const handlePrintDocument = (overrideSize?: PaperSize) => {
+    const sizeToUse = overrideSize || printPaperSize;
+    if (printDocumentRef.current) {
+      const typeLabel = printData?.type === 'receipt' ? 'Struk Kasir' :
+        printData?.type === 'invoice' ? 'Faktur Penjualan' :
+        printData?.type === 'nota' ? 'Nota Pembelian' :
+        printData?.type === 'spk' ? 'Surat Perintah Kerja' :
+        printData?.type === 'do' ? 'Surat Jalan Delivery Order' : 'Dokumen';
+      const docCode = printData?.data?.invoiceNumber || printData?.data?.code || printData?.data?.doNumber || '';
+      printHtmlViaIframe(
+        printDocumentRef.current.innerHTML,
+        printData?.type === 'receipt' ? 'A5' : sizeToUse,
+        'portrait',
+        `${typeLabel} ${docCode} - Toko Nirwana Jaya Nugraha`
+      );
+    } else {
+      window.print();
+    }
   };
 
   const companySettings = store.getCompanySettings();
@@ -247,6 +268,10 @@ export const App: React.FC = () => {
           {currentTab === 'pengaturan' && (
             <SettingsModule onNotify={showToast} />
           )}
+
+          {currentTab === 'log-aktivitas' && (
+            <ActivityLogModule onNotify={showToast} />
+          )}
         </main>
       </div>
 
@@ -364,24 +389,50 @@ export const App: React.FC = () => {
 
       {/* PRINT PREVIEW MODAL UNTUK DOKUMEN LAINNYA (SPK, NOTA, INVOICE, DO, RECEIPT) */}
       {printData && printData.type !== 'sph' && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:p-0 print:bg-white print:static print:inset-auto">
-          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 md:p-8 shadow-2xl max-h-[92vh] overflow-y-auto custom-scrollbar text-xs print:max-h-none print:shadow-none print:p-0 print:border-none">
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:p-0 print:bg-white print:static print:inset-auto print-modal-backdrop"
+          data-print-sheet="true"
+        >
+          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 md:p-8 shadow-2xl max-h-[92vh] overflow-y-auto custom-scrollbar text-xs print:max-h-none print:shadow-none print:p-0 print:border-none print-document-container">
             {/* Modal Controls (Hidden in print) */}
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 print:hidden">
-              <span className="font-black text-slate-800 uppercase text-xs">
-                Pratinjau Dokumen Cetak Resmi
-              </span>
+            <div className="flex flex-wrap items-center justify-between pb-4 mb-4 border-b border-slate-200 gap-2 print:hidden">
+              <div className="flex items-center gap-2">
+                <span className="font-black text-slate-800 uppercase text-xs">
+                  Pratinjau Dokumen Cetak Resmi
+                </span>
+                {printData.type !== 'receipt' && (
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-bold">
+                    {(['A4', 'F4', 'Letter'] as PaperSize[]).map(sz => (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => setPrintPaperSize(sz)}
+                        className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
+                          printPaperSize === sz
+                            ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {sz === 'F4' ? 'F4 / Folio' : sz}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={handlePrintDocument}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs shadow-md transition"
+                  type="button"
+                  onClick={() => handlePrintDocument()}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs shadow-md transition cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
-                  <span>Cetak Sekarang (Print / PDF)</span>
+                  <span>Cetak Dokumen (Print / PDF)</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setPrintData(null)}
-                  className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+                  className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
+                  title="Tutup Pratinjau"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -389,7 +440,10 @@ export const App: React.FC = () => {
             </div>
 
             {/* DOCUMENT PRINT BODY */}
-            <div className="p-4 bg-white text-slate-900 border border-slate-200 rounded-xl print:border-none print:p-0">
+            <div 
+              ref={printDocumentRef}
+              className="p-4 bg-white text-slate-900 border border-slate-200 rounded-xl print:border-none print:p-0 print-clean-page"
+            >
               {/* PRINT TYPE 1: THERMAL RECEIPT (KASIR POS) */}
               {printData.type === 'receipt' && (
                 <div className="max-w-xs mx-auto font-mono text-[11px] p-4 border border-dashed border-slate-300 rounded-lg print:border-none">

@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   Clock,
   History,
+  Edit2,
+  Trash2,
   X
 } from 'lucide-react';
 import { store } from '../store';
@@ -32,6 +34,20 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'katalog' | 'masuk' | 'keluar' | 'restok' | 'transfer' | 'opname' | 'mutasi'>('katalog');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Edit Product Modal State
+  const [editingProduct, setEditingProduct] = useState<PosProduct | null>(null);
+  const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
+  const [editProductForm, setEditProductForm] = useState({
+    name: '',
+    sku: '',
+    stock: 0,
+    minStock: 0,
+    price: 0,
+    priceProject: 0,
+    hppPrice: 0,
+    rackLocation: ''
+  });
 
   // Form States for Stock In / Out
   const [stockInOutForm, setStockInOutForm] = useState({
@@ -72,6 +88,47 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
       (p.brand && p.brand.toLowerCase().includes(q))
     );
   });
+
+  // Edit & Delete Handlers for Product
+  const handleOpenEditProduct = (p: PosProduct) => {
+    setEditingProduct(p);
+    setEditProductForm({
+      name: p.name,
+      sku: p.sku,
+      stock: p.stock,
+      minStock: p.minStock,
+      price: p.price,
+      priceProject: p.priceProject || p.price,
+      hppPrice: p.hppPrice,
+      rackLocation: p.rackLocation || ''
+    });
+    setIsEditProductModalOpen(true);
+  };
+
+  const handleSaveEditProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    store.updateProduct(editingProduct.id, {
+      name: editProductForm.name,
+      sku: editProductForm.sku,
+      stock: Number(editProductForm.stock) || 0,
+      minStock: Number(editProductForm.minStock) || 0,
+      price: Number(editProductForm.price) || 0,
+      priceProject: Number(editProductForm.priceProject) || 0,
+      hppPrice: Number(editProductForm.hppPrice) || 0,
+      rackLocation: editProductForm.rackLocation
+    });
+    setIsEditProductModalOpen(false);
+    setEditingProduct(null);
+    onNotify?.(`Data dan stok barang ${editProductForm.name} berhasil diperbarui!`, 'success');
+  };
+
+  const handleDeleteProduct = (p: PosProduct) => {
+    if (confirm(`HAPUS BARANG DARI INVENTARIS?\n\nNama: ${p.name}\nSKU: ${p.sku}\nStok Saat Ini: ${p.stock} ${p.unit}\n\nBarang akan dihapus dari sistem.`)) {
+      store.deleteProduct(p.id);
+      onNotify?.(`Barang ${p.name} berhasil dihapus dari inventaris!`, 'success');
+    }
+  };
 
   // Handle Quick Stock In / Out
   const handleStockAdjust = (type: 'masuk' | 'keluar') => {
@@ -323,12 +380,31 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                         </span>
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <button
-                          onClick={() => onOpenRestockModal(p, p.recommendedReorderQty)}
-                          className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-[11px] shadow-sm transition"
-                        >
-                          + Restok
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => onOpenRestockModal(p, p.recommendedReorderQty)}
+                            className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-[10px] shadow-xs transition"
+                            title="Restok Barang"
+                          >
+                            + Restok
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditProduct(p)}
+                            className="p-1 text-slate-700 hover:bg-amber-100 hover:text-amber-900 rounded-lg border border-slate-200 transition cursor-pointer"
+                            title="Edit Data & Stok Barang"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProduct(p)}
+                            className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 transition cursor-pointer"
+                            title="Hapus Barang dari Inventaris"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -848,6 +924,147 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT DATA & STOK BARANG */}
+      {isEditProductModalOpen && editingProduct && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl text-xs space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <Boxes className="w-5 h-5 text-amber-600" />
+                <h3 className="text-base font-black text-slate-900">
+                  Edit Data &amp; Stok Barang ({editingProduct.sku})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingProduct(null);
+                  setIsEditProductModalOpen(false);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditProduct} className="space-y-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Barang *</label>
+                <input
+                  type="text"
+                  required
+                  value={editProductForm.name}
+                  onChange={e => setEditProductForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-xl font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Kode SKU / Barcode</label>
+                  <input
+                    type="text"
+                    required
+                    value={editProductForm.sku}
+                    onChange={e => setEditProductForm(prev => ({ ...prev, sku: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Lokasi Rak Gudang</label>
+                  <input
+                    type="text"
+                    value={editProductForm.rackLocation}
+                    onChange={e => setEditProductForm(prev => ({ ...prev, rackLocation: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                <div>
+                  <label className="font-bold text-amber-900 block mb-1">Stok Fisik Saat Ini ({editingProduct.unit}) *</label>
+                  <input
+                    type="number"
+                    min={0}
+                    required
+                    value={editProductForm.stock}
+                    onChange={e => setEditProductForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border border-amber-300 rounded-xl font-mono text-base font-black text-slate-900 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-amber-900 block mb-1">Batas Minimum Stok *</label>
+                  <input
+                    type="number"
+                    min={0}
+                    required
+                    value={editProductForm.minStock}
+                    onChange={e => setEditProductForm(prev => ({ ...prev, minStock: parseInt(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border border-amber-300 rounded-xl font-mono text-base font-bold text-slate-900 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">HPP (Modal)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    required
+                    value={editProductForm.hppPrice}
+                    onChange={e => setEditProductForm(prev => ({ ...prev, hppPrice: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-2 py-1.5 border rounded-xl font-mono font-bold text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Harga Toko</label>
+                  <input
+                    type="number"
+                    min={0}
+                    required
+                    value={editProductForm.price}
+                    onChange={e => setEditProductForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-2 py-1.5 border rounded-xl font-mono font-bold text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Harga Kontraktor</label>
+                  <input
+                    type="number"
+                    min={0}
+                    required
+                    value={editProductForm.priceProject}
+                    onChange={e => setEditProductForm(prev => ({ ...prev, priceProject: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-2 py-1.5 border rounded-xl font-mono font-bold text-blue-700"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setIsEditProductModalOpen(false);
+                  }}
+                  className="px-4 py-2 border rounded-xl font-bold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
+                >
+                  Simpan Perubahan Barang
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
