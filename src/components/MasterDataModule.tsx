@@ -32,6 +32,34 @@ interface MasterDataModuleProps {
   onNotify?: (msg: string, type?: 'success' | 'error') => void;
 }
 
+type CategoryItem = { id: string; name: string; description: string; isActive: boolean; createdAt: string };
+
+const DEFAULT_CATEGORIES: CategoryItem[] = [
+  { id: 'cat-1', name: 'Panel Listrik', description: 'Panel listrik dan distribusi', isActive: true, createdAt: new Date().toISOString() },
+  { id: 'cat-2', name: 'Kabel & Kabel Listrik', description: 'Jenis-jenis kabel listrik', isActive: true, createdAt: new Date().toISOString() },
+  { id: 'cat-3', name: 'Komponen Listrik', description: 'Komponen listrik untuk instalasi', isActive: true, createdAt: new Date().toISOString() },
+  { id: 'cat-4', name: 'Jala Listrik & Instalasi', description: 'Jala listrik dan ruang instalasi', isActive: true, createdAt: new Date().toISOString() },
+  { id: 'cat-5', name: 'Lighting & Penerangan', description: 'Lampu dan sistem penerangan', isActive: true, createdAt: new Date().toISOString() },
+  { id: 'cat-6', name: 'Safety & Proteksi', description: 'Alat keselamatan listrik', isActive: true, createdAt: new Date().toISOString() },
+  { id: 'cat-7', name: 'AC & Kencana', description: 'System pendingin udara', isActive: true, createdAt: new Date().toISOString() },
+  { id: 'cat-8', name: 'Peralatan Energi', description: 'Energi terbarukan dan penyimpanan', isActive: true, createdAt: new Date().toISOString() },
+  { id: 'cat-9', name: 'Pool & Ketahanan', description: 'Komponen ketahanan dan listrik', isActive: true, createdAt: new Date().toISOString() },
+  { id: 'cat-10', name: 'Binding & Tampilan', description: 'Binding dan tampilan listrik', isActive: false, createdAt: new Date().toISOString() }
+];
+
+/** Baca daftar kategori dari localStorage; jika belum ada, pakai default. */
+function loadCategoryList(): CategoryItem[] {
+  try {
+    const saved = localStorage.getItem('njn_categories_v1');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch { /* abaikan error parse */ }
+  localStorage.setItem('njn_categories_v1', JSON.stringify(DEFAULT_CATEGORIES));
+  return DEFAULT_CATEGORIES;
+}
+
 export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) => {
   const [activeTab, setActiveTab] = useState<'barang' | 'customer' | 'supplier' | 'satuan' | 'harga'>('barang');
   const [productViewMode, setProductViewMode] = useState<'table' | 'grid'>('table');
@@ -72,7 +100,7 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [categoryForm, setCategoryForm] = useState({ name: '', description: '', isActive: true });
-  const [categories, setCategories] = useState<{ id: string; name: string; description: string; isActive: boolean; createdAt: string }[]>([]);
+  const [categories, setCategories] = useState<CategoryItem[]>(loadCategoryList);
   const [searchCategory, setSearchCategory] = useState('');
   const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
   const [editingProductIdForCategory, setEditingProductIdForCategory] = useState<string | null>(null);
@@ -181,11 +209,28 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
     e.preventDefault();
     if (!productForm.name || !productForm.sku) return;
 
+    // Kategori boleh diketik manual — normalisasi dulu, lalu simpan ke daftar jika belum ada
+    const typedCategory = normalizeCategoryName(productForm.category || 'Lainnya');
+    const finalForm = { ...productForm, category: typedCategory };
+    if (!categories.some(c => c.name.toLowerCase() === typedCategory.toLowerCase())) {
+      const newCat: CategoryItem = {
+        id: `cat-${Date.now()}`,
+        name: typedCategory,
+        description: '',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...categories, newCat];
+      setCategories(updated);
+      localStorage.setItem('njn_categories_v1', JSON.stringify(updated));
+    }
+    setProductForm(prev => ({ ...prev, category: typedCategory }));
+
     if (editingProductId) {
-      store.updateProduct(editingProductId, productForm);
+      store.updateProduct(editingProductId, finalForm);
       onNotify?.(`Produk ${productForm.name} berhasil diperbarui!`, 'success');
     } else {
-      store.addProduct(productForm);
+      store.addProduct(finalForm);
       onNotify?.(`Produk baru ${productForm.name} berhasil ditambahkan!`, 'success');
     }
     setIsProductModalOpen(false);
@@ -333,26 +378,8 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
 
   // Category Management Handlers
   const loadCategories = () => {
-    // Load categories from localStorage or use default categories
-    const saved = localStorage.getItem('njn_categories_v1');
-    if (saved) {
-      setCategories(JSON.parse(saved));
-    } else {
-      const defaultCategories = [
-        { id: 'cat-1', name: 'Panel Listrik', description: 'Panel listrik dan distribusi', isActive: true, createdAt: new Date().toISOString() },
-        { id: 'cat-2', name: 'Kabel & Kabel Listrik', description: 'Jenis-jenis kabel listrik', isActive: true, createdAt: new Date().toISOString() },
-        { id: 'cat-3', name: 'Komponen Listrik', description: 'Komponen listrik untuk instalasi', isActive: true, createdAt: new Date().toISOString() },
-        { id: 'cat-4', name: 'Jala Listrik & Instalasi', description: 'Jala listrik dan ruang instalasi', isActive: true, createdAt: new Date().toISOString() },
-        { id: 'cat-5', name: 'Lighting & Penerangan', description: 'Lampu dan sistem penerangan', isActive: true, createdAt: new Date().toISOString() },
-        { id: 'cat-6', name: 'Safety & Proteksi', description: 'Alat keselamatan listrik', isActive: true, createdAt: new Date().toISOString() },
-        { id: 'cat-7', name: 'AC & Kencana', description: 'System pendingin udara', isActive: true, createdAt: new Date().toISOString() },
-        { id: 'cat-8', name: 'Peralatan Energi', description: 'Energi terbarukan dan penyimpanan', isActive: true, createdAt: new Date().toISOString() },
-        { id: 'cat-9', name: 'Pool & Ketahanan', description: 'Komponen ketahanan dan listrik', isActive: true, createdAt: new Date().toISOString() },
-        { id: 'cat-10', name: 'Binding & Tampilan', description: 'Binding dan tampilan listrik', isActive: false, createdAt: new Date().toISOString() }
-      ];
-      setCategories(defaultCategories);
-      localStorage.setItem('njn_categories_v1', JSON.stringify(defaultCategories));
-    }
+    // Muat daftar kategori dari localStorage (atau default)
+    setCategories(loadCategoryList());
   };
 
   const handleSaveCategory = (e: React.FormEvent) => {
@@ -1125,20 +1152,23 @@ export const MasterDataModule: React.FC<MasterDataModuleProps> = ({ onNotify }) 
 
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Kategori</label>
-                  <select
+                  <label className="font-bold text-slate-700 block mb-1">Kategori (ketik manual)</label>
+                  <input
+                    type="text"
+                    list="kategori-produk-datalist"
                     value={productForm.category}
                     onChange={e => setProductForm({ ...productForm, category: e.target.value })}
+                    placeholder="Ketik kategori apa saja, misal: Kabel Terminasi"
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl"
-                  >
-                    <option value="Kabel Power">Kabel Power</option>
-                    <option value="Kabel Instalasi">Kabel Instalasi</option>
-                    <option value="Komponen MCB">Komponen MCB</option>
-                    <option value="Pemutus Daya Utama">Pemutus Daya Utama</option>
-                    <option value="Box Panel Proyek">Box Panel Proyek</option>
-                    <option value="Aksesoris Jalur Kabel">Aksesoris Jalur Kabel</option>
-                    <option value="Alat Ukur Listrik">Alat Ukur Listrik</option>
-                  </select>
+                  />
+                  <datalist id="kategori-produk-datalist">
+                    {categories.map(c => (
+                      <option key={c.id} value={c.name} />
+                    ))}
+                  </datalist>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Bebas diketik — kategori baru otomatis tersimpan ke daftar
+                  </p>
                 </div>
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Kategori Otomatis</label>
