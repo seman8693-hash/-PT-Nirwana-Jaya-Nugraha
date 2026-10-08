@@ -51,6 +51,14 @@ export const App: React.FC = () => {
   } | null>(null);
 
   const [printPaperSize, setPrintPaperSize] = useState<PaperSize>('A4');
+  const [receiptThermalSize, setReceiptThermalSize] = useState<'Thermal58' | 'Thermal80'>(() => {
+    try {
+      const w = store.getCompanySettings().thermalPaperWidth;
+      return w === '58mm' ? 'Thermal58' : 'Thermal80';
+    } catch {
+      return 'Thermal80';
+    }
+  });
   const printDocumentRef = useRef<HTMLDivElement>(null);
 
   // Preselected purchase item from Restock recommendation
@@ -101,7 +109,7 @@ export const App: React.FC = () => {
       const docCode = printData?.data?.invoiceNumber || printData?.data?.code || printData?.data?.doNumber || '';
       printHtmlViaIframe(
         printDocumentRef.current.innerHTML,
-        printData?.type === 'receipt' ? 'A5' : sizeToUse,
+        printData?.type === 'receipt' ? receiptThermalSize : sizeToUse,
         'portrait',
         `${typeLabel} ${docCode} - Toko Nirwana Jaya Nugraha`
       );
@@ -418,6 +426,24 @@ export const App: React.FC = () => {
                     ))}
                   </div>
                 )}
+                {printData.type === 'receipt' && (
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-bold">
+                    {((['Thermal58', 'Thermal80'] as const)).map(sz => (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => setReceiptThermalSize(sz)}
+                        className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
+                          receiptThermalSize === sz
+                            ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {sz === 'Thermal58' ? '58mm' : '80mm'}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -446,7 +472,9 @@ export const App: React.FC = () => {
             >
               {/* PRINT TYPE 1: THERMAL RECEIPT (KASIR POS) */}
               {printData.type === 'receipt' && (
-                <div className="max-w-xs mx-auto font-mono text-[11px] p-4 border border-dashed border-slate-300 rounded-lg print:border-none">
+                <div className={`mx-auto font-mono text-[11px] p-4 border border-dashed border-slate-300 rounded-lg print:border-none ${
+                  receiptThermalSize === 'Thermal58' ? 'max-w-[58mm]' : 'max-w-[80mm]'
+                }`} data-receipt-width={receiptThermalSize}>
                   <div className="text-center space-y-1 pb-3 border-b border-dashed border-slate-400">
                     <NjnLogo variant="icon" size="sm" className="mx-auto" />
                     <div className="font-bold text-xs">{store.getCompanySettings().companyName || 'TOKO NIRWANA JAYA NUGRAHA'}</div>

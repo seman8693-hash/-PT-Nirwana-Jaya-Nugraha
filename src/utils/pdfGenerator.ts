@@ -5,8 +5,26 @@ import { store } from '../store';
 import { formatRupiah, formatDate } from './format';
 import { terbilang } from './terbilang';
 
-export type PaperSize = 'A4' | 'F4' | 'Letter' | 'A5';
+export type PaperSize = 'A4' | 'F4' | 'Letter' | 'A5' | 'Thermal58' | 'Thermal80';
 export type PaperOrientation = 'portrait' | 'landscape';
+
+/**
+ * Map PaperSize ke nilai CSS @page size.
+ * Thermal = lebar roll, tinggi auto (kertas gulung continuous).
+ */
+export function resolveCssPageSize(paperSize: PaperSize): string {
+  if (paperSize === 'F4') return '215mm 330mm';
+  if (paperSize === 'Letter') return 'letter';
+  if (paperSize === 'A5') return 'A5';
+  if (paperSize === 'Thermal58') return '58mm auto';
+  if (paperSize === 'Thermal80') return '80mm auto';
+  return 'A4';
+}
+
+/** True untuk kertas struk thermal (58mm / 80mm). */
+export function isThermalSize(paperSize: PaperSize): boolean {
+  return paperSize === 'Thermal58' || paperSize === 'Thermal80';
+}
 
 /**
  * Helper to trigger a direct download of a Blob.
@@ -423,10 +441,10 @@ export function printHtmlViaIframe(
     existingIframe.remove();
   }
 
-  let cssSize = 'A4';
-  if (paperSize === 'F4') cssSize = '215mm 330mm';
-  else if (paperSize === 'Letter') cssSize = 'letter';
-  else if (paperSize === 'A5') cssSize = 'A5';
+  const cssSize = resolveCssPageSize(paperSize);
+  const isThermal = isThermalSize(paperSize);
+  const pageMargin = isThermal ? '0 2mm' : '10mm 12mm 12mm 12mm';
+  const bodyFontSize = isThermal ? '9pt' : '11pt';
 
   const iframe = document.createElement('iframe');
   iframe.id = 'njn-print-iframe';
@@ -457,7 +475,7 @@ export function printHtmlViaIframe(
       <style>
         @page {
           size: ${cssSize} ${orientation};
-          margin: 10mm 12mm 12mm 12mm;
+          margin: ${pageMargin};
         }
         * {
           box-sizing: border-box;
@@ -470,7 +488,7 @@ export function printHtmlViaIframe(
           background: #ffffff;
           color: #0f172a;
           font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-          font-size: 11pt;
+          font-size: ${bodyFontSize};
         }
         table {
           width: 100%;
@@ -479,11 +497,23 @@ export function printHtmlViaIframe(
         .print-hidden, [data-print-hidden="true"] {
           display: none !important;
         }
+        /* Struk thermal: paksa pas lebar kertas, hilangkan padding/border preview */
+        .thermal-receipt-sheet {
+          width: 100% !important;
+          max-width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+        }
+        .thermal-receipt-sheet .truncate {
+          white-space: normal !important;
+          word-break: break-word;
+        }
       </style>
       <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="bg-white text-slate-900">
-      ${contentHtml}
+      ${isThermal ? `<div class="thermal-receipt-sheet">${contentHtml}</div>` : contentHtml}
     </body>
     </html>
   `);
@@ -517,10 +547,8 @@ export function printHtmlViaIframeFixed(
     existingIframe.remove();
   }
 
-  let cssSize = 'A4';
-  if (paperSize === 'F4') cssSize = '215mm 330mm';
-  else if (paperSize === 'Letter') cssSize = 'letter';
-  else if (paperSize === 'A5') cssSize = 'A5';
+  let cssSize = resolveCssPageSize(paperSize);
+  const isThermal = isThermalSize(paperSize);
 
   const iframe = document.createElement('iframe');
   iframe.id = 'njn-print-iframe';
@@ -547,7 +575,7 @@ export function printHtmlViaIframeFixed(
   const printStyles = `
     @page {
       size: ${cssSize} ${orientation};
-      margin: 10mm 12mm 12mm 12mm;
+      margin: ${isThermal ? '0 2mm' : '10mm 12mm 12mm 12mm'};
     }
     * {
       box-sizing: border-box;
@@ -560,13 +588,13 @@ export function printHtmlViaIframeFixed(
       background: #ffffff;
       color: #0f172a;
       font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      font-size: 11pt;
+      font-size: ${isThermal ? '9pt' : '11pt'};
     }
     .print-container {
       width: 100%;
-      height: 100vh;
-      overflow: hidden;
-      page-break-inside: avoid;
+      height: ${isThermal ? 'auto' : '100vh'};
+      overflow: ${isThermal ? 'visible' : 'hidden'};
+      page-break-inside: ${isThermal ? 'auto' : 'avoid'};
     }
     .print-container table {
       width: 100%;
@@ -601,11 +629,23 @@ export function printHtmlViaIframeFixed(
     @media print {
       @page {
         size: ${cssSize} ${orientation};
-        margin: 10mm 12mm 12mm 12mm;
+        margin: ${isThermal ? '0 2mm' : '10mm 12mm 12mm 12mm'};
       }
       .print-hidden {
         display: none !important;
       }
+    }
+    /* Struk thermal: paksa pas lebar kertas, hilangkan padding/border preview */
+    .thermal-receipt-sheet {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+    .thermal-receipt-sheet .truncate {
+      white-space: normal !important;
+      word-break: break-word;
     }
   `;
 
@@ -625,7 +665,7 @@ export function printHtmlViaIframeFixed(
       <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="bg-white text-slate-900">
-      <div class="print-container">
+      <div class="${isThermal ? 'print-container thermal-receipt-sheet' : 'print-container'}">
         ${contentHtml}
       </div>
     </body>
