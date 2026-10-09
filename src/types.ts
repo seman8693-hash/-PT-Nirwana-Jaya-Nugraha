@@ -65,6 +65,18 @@ export interface UnitMaster {
 }
 
 // 3. INVENTORY: MUTASI & OPNAME
+export interface ProductLotEntry {
+  id: string;
+  productId: string;
+  lotNo?: string;
+  batchNo?: string;
+  expiredDate?: string;
+  qty: number;
+  createdAt: string;
+  sourceLocation: string;
+  notes?: string;
+}
+
 export interface StockMovement {
   id: string;
   date: string;
@@ -79,6 +91,9 @@ export interface StockMovement {
   targetLocation: string;
   notes: string;
   pic: string;
+  lotNo?: string;
+  batchNo?: string;
+  expiredDate?: string;
 }
 
 export interface StockOpnameItem {

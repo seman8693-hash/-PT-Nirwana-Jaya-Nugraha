@@ -74,12 +74,12 @@ export function generateDirectVectorSphPdf(
 
   let y = margin;
 
-  // Header Box / Brand Kop
-  doc.setFillColor(15, 23, 42); // slate-900
+  // Header Box / Brand Kop (formal black and white, logo remains highlighted)
+  doc.setFillColor(15, 23, 42);
   doc.rect(margin, y, contentWidth, 24, 'F');
 
-  // NJN Gold Monogram Box
-  doc.setFillColor(212, 167, 71); // Gold
+  // NJN Gold Monogram Box (logo tetap terlihat, sisanya hitam-putih)
+  doc.setFillColor(212, 167, 71);
   doc.roundedRect(margin + 3, y + 3, 18, 18, 2, 2, 'F');
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
@@ -98,7 +98,7 @@ export function generateDirectVectorSphPdf(
   doc.text('Distributor Alat Listrik, Kabel Supreme, MCB & Fabrikasi Panel Listrik', margin + 25, y + 13);
   doc.text(`${company.address || 'Jl. Soekarno Hatta No. 488 Bandung'} | Telp: ${company.phone || '(022) 731-8921'}`, margin + 25, y + 18);
 
-  // Right side of Kop: SPH Code Badge
+  // Right side of Kop: SPH Code Badge (formal monochrome)
   doc.setFillColor(30, 41, 59);
   doc.roundedRect(pageWidth - margin - 48, y + 4, 45, 16, 2, 2, 'F');
   doc.setFontSize(7);

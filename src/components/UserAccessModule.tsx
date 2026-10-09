@@ -134,16 +134,6 @@ export const UserAccessModule: React.FC<UserAccessModuleProps> = ({ onNotify }) 
 
         <div className="flex items-center gap-2">
           <button
-            type="button"
-            onClick={() => {
-              const u = store.generateAutoUser('kasir');
-              onNotify?.(`Akun otomatis dibuat: ${u.name} (Username: ${u.username}, PIN: ${u.pin})`, 'success');
-            }}
-            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold rounded-xl text-xs shadow transition cursor-pointer"
-          >
-            <span>⚡ Buat Akun Otomatis</span>
-          </button>
-          <button
             onClick={() => setIsAddUserOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition cursor-pointer"
           >

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Users,
   UserPlus,
-  Sparkles,
   KeyRound,
   Shield,
   Trash2,
@@ -30,7 +29,7 @@ export const UserManageModal: React.FC<UserManageModalProps> = ({
 
   const users = store.getUsers();
 
-  const [activeTab, setActiveTab] = useState<'manual' | 'otomatis' | 'list'>('manual');
+  const [activeTab, setActiveTab] = useState<'manual' | 'list'>('manual');
   
   // Manual form
   const [username, setUsername] = useState('');
@@ -135,19 +134,6 @@ export const UserManageModal: React.FC<UserManageModalProps> = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('otomatis')}
-            className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'otomatis'
-                ? 'border-amber-500 text-amber-600 bg-white rounded-t-xl'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>2. Otomatis Buat</span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setActiveTab('list')}
             className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'list'
@@ -156,7 +142,7 @@ export const UserManageModal: React.FC<UserManageModalProps> = ({
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>3. Daftar Akun ({users.length})</span>
+            <span>2. Daftar Akun ({users.length})</span>
           </button>
         </div>
 
@@ -251,73 +237,6 @@ export const UserManageModal: React.FC<UserManageModalProps> = ({
             </form>
           )}
 
-          {/* TAB 2: OTOMATIS GENERATE */}
-          {activeTab === 'otomatis' && (
-            <div className="space-y-3">
-              <div>
-                <h4 className="text-xs font-black text-slate-900">
-                  Generate Akun Cepat & Otomatis (1-Klik)
-                </h4>
-                <p className="text-[11px] text-slate-500">
-                  Sistem akan otomatis menentukan username, nomor staf, dan PIN 4-digit acak yang langsung aktif.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => handleAutoCreate('kasir', 'Kasir Tambahan')}
-                  className="p-3 rounded-2xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50/50 text-left transition cursor-pointer group"
-                >
-                  <div className="text-xs font-black text-slate-900 group-hover:text-amber-700">
-                    ⚡ Buat Akun Kasir Otomatis
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
-                    Role: Kasir • Wewenang POS Kios & Kas Harian
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleAutoCreate('gudang', 'Staf Gudang Logistik')}
-                  className="p-3 rounded-2xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50/50 text-left transition cursor-pointer group"
-                >
-                  <div className="text-xs font-black text-slate-900 group-hover:text-amber-700">
-                    ⚡ Buat Akun Gudang Otomatis
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
-                    Role: Gudang • Wewenang Stok Barang & Surat Jalan
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleAutoCreate('keuangan', 'Staf Keuangan & Pajak')}
-                  className="p-3 rounded-2xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50/50 text-left transition cursor-pointer group"
-                >
-                  <div className="text-xs font-black text-slate-900 group-hover:text-amber-700">
-                    ⚡ Buat Akun Keuangan Otomatis
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
-                    Role: Keuangan • Wewenang Faktur, Hutang & Jurnal
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleAutoCreate('sales', 'Sales Lapangan NJN')}
-                  className="p-3 rounded-2xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50/50 text-left transition cursor-pointer group"
-                >
-                  <div className="text-xs font-black text-slate-900 group-hover:text-amber-700">
-                    ⚡ Buat Akun Sales Otomatis
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
-                    Role: Sales • Wewenang Penawaran SPH & Pelanggan
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* TAB 3: DAFTAR AKUN */}
           {activeTab === 'list' && (

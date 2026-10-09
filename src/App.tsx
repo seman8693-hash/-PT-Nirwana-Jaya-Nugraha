@@ -88,8 +88,13 @@ export const App: React.FC = () => {
     setIsRestockOpen(true);
   };
 
-  const handleSaveRestock = (productId: string, qty: number, notes?: string) => {
-    store.updateProductStock(productId, qty, notes);
+  const handleSaveRestock = (
+    productId: string,
+    qty: number,
+    notes?: string,
+    lotMeta?: { lotNo?: string; batchNo?: string; expiredDate?: string }
+  ) => {
+    store.updateProductStock(productId, qty, notes, lotMeta);
     showToast(`Stok ${restockProduct?.name || 'barang'} bertambah +${qty} unit (${notes || 'Restok Cepat'})`);
   };
 

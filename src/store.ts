@@ -820,7 +820,13 @@ class Store {
     this.state.stockMovements = [newMovement, ...this.state.stockMovements];
   }
 
-  public adjustStock(productId: string, qtyDelta: number, reason: string, referenceNo: string = '-'): void {
+  public adjustStock(
+    productId: string,
+    qtyDelta: number,
+    reason: string,
+    referenceNo: string = '-',
+    lotMeta?: { lotNo?: string; batchNo?: string; expiredDate?: string }
+  ): void {
     this.state.products = this.state.products.map(p => {
       if (p.id === productId) {
         const newStock = Math.max(0, p.stock + qtyDelta);
@@ -835,7 +841,10 @@ class Store {
           sourceLocation: qtyDelta >= 0 ? 'Pemasukan / Restok' : p.rackLocation || 'Gudang',
           targetLocation: qtyDelta >= 0 ? p.rackLocation || 'Gudang' : 'Pengeluaran Stok',
           notes: reason,
-          pic: this.state.currentUser.name
+          pic: this.state.currentUser.name,
+          lotNo: lotMeta?.lotNo,
+          batchNo: lotMeta?.batchNo,
+          expiredDate: lotMeta?.expiredDate
         });
         return {
           ...p,
@@ -848,8 +857,13 @@ class Store {
     this.save();
   }
 
-  public updateProductStock(productId: string, deltaQty: number, notes: string = 'Penambahan Stok Cepat'): void {
-    this.adjustStock(productId, deltaQty, notes, `RESTOCK-${Date.now().toString().slice(-4)}`);
+  public updateProductStock(
+    productId: string,
+    deltaQty: number,
+    notes: string = 'Penambahan Stok Cepat',
+    lotMeta?: { lotNo?: string; batchNo?: string; expiredDate?: string }
+  ): void {
+    this.adjustStock(productId, deltaQty, notes, `RESTOCK-${Date.now().toString().slice(-4)}`, lotMeta);
   }
 
   public transferStock(productId: string, qty: number, source: string, target: string, notes: string): void {

@@ -755,6 +755,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                   <th className="py-3 px-3">Tipe Mutasi</th>
                   <th className="py-3 px-3 text-center">Kuantitas</th>
                   <th className="py-3 px-3">No. Referensi</th>
+                  <th className="py-3 px-3">LOT / Batch / ED</th>
                   <th className="py-3 px-3">Asal / Tujuan</th>
                   <th className="py-3 px-3">PIC</th>
                 </tr>
@@ -800,6 +801,10 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                       <span className="text-slate-400 font-normal">{m.unit}</span>
                     </td>
                     <td className="py-2.5 px-3 font-mono text-slate-700">{m.referenceNo}</td>
+                    <td className="py-2.5 px-3 text-slate-700 text-[11px]">
+                      <div className="font-semibold text-slate-700">{m.lotNo || m.batchNo ? `${m.lotNo || '-'} / ${m.batchNo || '-'}` : '-'}</div>
+                      <div className="text-[10px] text-slate-500">{m.expiredDate ? `ED: ${m.expiredDate}` : 'ED: -'}</div>
+                    </td>
                     <td className="py-2.5 px-3 text-slate-600 text-[11px]">
                       {m.sourceLocation} → {m.targetLocation}
                     </td>

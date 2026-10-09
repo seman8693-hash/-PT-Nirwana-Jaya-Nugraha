@@ -306,43 +306,43 @@ export const SphPreviewModal: React.FC<SphPreviewModalProps> = ({
               {/* KOP SURAT RESMI TOKO NIRWANA JAYA NUGRAHA */}
               <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4 mb-5">
                 <div className="flex items-start gap-4">
-                  <div className="shrink-0 mt-1">
+                  <div className="shrink-0 mt-1 print:grayscale-0">
                     <NjnLogo variant="icon" size="md" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-base font-black tracking-widest text-slate-900 font-serif">
+                      <span className="text-base font-black tracking-widest text-slate-900 font-serif print:text-black">
                         NJN
                       </span>
-                      <span className="text-sm font-extrabold text-slate-900 tracking-wide uppercase">
+                      <span className="text-sm font-extrabold text-slate-900 tracking-wide uppercase print:text-black">
                         {company.companyName || 'TOKO NIRWANA JAYA NUGRAHA'}
                       </span>
                     </div>
-                    <div className="text-[11px] font-bold text-amber-700 tracking-wide mt-0.5">
+                    <div className="text-[11px] font-bold text-amber-700 tracking-wide mt-0.5 print:text-black print:font-bold print:tracking-normal">
                       DISTRIBUTOR ALAT LISTRIK, KABEL SUPREME, KOMPONEN MCB & FABRIKASI PANEL LISTRIK
                     </div>
-                    <div className="text-[10px] text-slate-600 mt-1 leading-relaxed">
+                    <div className="text-[10px] text-slate-600 mt-1 leading-relaxed print:text-black">
                       {company.address || 'Jl. Soekarno Hatta No. 488, Batununggal, Bandung, Jawa Barat 40266'}
                     </div>
-                    <div className="text-[10px] text-slate-500 font-medium">
+                    <div className="text-[10px] text-slate-500 font-medium print:text-black">
                       Telp / WhatsApp: {company.phone || '(022) 731-8921 / 0812-2200-9811'} • Email: {company.email || 'operasional@nirwanajaya.co.id'}
                     </div>
                   </div>
                 </div>
 
                 <div className="text-right shrink-0">
-                  <div className="inline-block px-3 py-1 bg-slate-100 border border-slate-300 rounded-lg text-right">
-                    <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                  <div className="inline-block px-3 py-1 bg-slate-100 border border-slate-300 rounded-lg text-right print:bg-white print:border-slate-400">
+                    <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider print:text-black">
                       NOMOR SURAT PENAWARAN:
                     </div>
-                    <div className="font-mono font-black text-xs text-slate-900">
+                    <div className="font-mono font-black text-xs text-slate-900 print:text-black">
                       {sph.code}
                     </div>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-1.5 font-medium">
+                  <div className="text-[10px] text-slate-500 mt-1.5 font-medium print:text-black">
                     Tanggal: <b>{formatDate(sph.date)}</b>
                   </div>
-                  <div className="text-[10px] text-amber-700 font-bold">
+                  <div className="text-[10px] text-amber-700 font-bold print:text-black">
                     Berlaku s.d. <b>{formatDate(sph.validUntil)}</b>
                   </div>
                 </div>

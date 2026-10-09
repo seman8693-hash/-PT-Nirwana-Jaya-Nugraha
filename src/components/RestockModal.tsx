@@ -8,7 +8,12 @@ interface RestockModalProps {
   initialQty?: number;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (productId: string, qty: number, notes?: string) => void;
+  onSave: (
+    productId: string,
+    qty: number,
+    notes?: string,
+    lotMeta?: { lotNo?: string; batchNo?: string; expiredDate?: string }
+  ) => void;
 }
 
 export const RestockModal: React.FC<RestockModalProps> = ({
@@ -20,11 +25,17 @@ export const RestockModal: React.FC<RestockModalProps> = ({
 }) => {
   const [qty, setQty] = useState(initialQty);
   const [notes, setNotes] = useState('');
+  const [lotNo, setLotNo] = useState('');
+  const [batchNo, setBatchNo] = useState('');
+  const [expiredDate, setExpiredDate] = useState('');
 
   useEffect(() => {
     if (product) {
       setQty(initialQty > 0 ? initialQty : 10);
       setNotes('');
+      setLotNo('');
+      setBatchNo('');
+      setExpiredDate('');
     }
   }, [product, initialQty]);
 
@@ -33,7 +44,7 @@ export const RestockModal: React.FC<RestockModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (qty > 0) {
-      onSave(product.id, qty, notes);
+      onSave(product.id, qty, notes, { lotNo, batchNo, expiredDate });
       onClose();
     }
   };
@@ -165,7 +176,39 @@ export const RestockModal: React.FC<RestockModalProps> = ({
             </div>
           </div>
 
-          {/* Keterangan */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">No. Lot / Batch</label>
+              <input
+                type="text"
+                value={lotNo}
+                onChange={e => setLotNo(e.target.value)}
+                placeholder="LOT-001"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white text-slate-800"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Batch / Seri</label>
+              <input
+                type="text"
+                value={batchNo}
+                onChange={e => setBatchNo(e.target.value)}
+                placeholder="BATCH-2026"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white text-slate-800"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Tgl. Kadaluarsa</label>
+            <input
+              type="date"
+              value={expiredDate}
+              onChange={e => setExpiredDate(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white text-slate-800"
+            />
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Keterangan / Sumber Tambahan (Opsional):
