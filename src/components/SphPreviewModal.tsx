@@ -331,18 +331,18 @@ export const SphPreviewModal: React.FC<SphPreviewModalProps> = ({
                 </div>
 
                 <div className="text-right shrink-0">
-                  <div className="inline-block px-3 py-1 bg-slate-100 border border-slate-300 rounded-lg text-right print:bg-white print:border-slate-400">
-                    <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider print:text-black">
+                  <div className="inline-block px-3 py-1 bg-white border border-slate-300 rounded-lg text-right print:bg-white print:border-slate-400">
+                    <div className="text-[9px] font-bold text-slate-700 uppercase tracking-wider print:text-black">
                       NOMOR SURAT PENAWARAN:
                     </div>
                     <div className="font-mono font-black text-xs text-slate-900 print:text-black">
                       {sph.code}
                     </div>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-1.5 font-medium print:text-black">
+                  <div className="text-[10px] text-slate-700 mt-1.5 font-medium print:text-black">
                     Tanggal: <b>{formatDate(sph.date)}</b>
                   </div>
-                  <div className="text-[10px] text-amber-700 font-bold print:text-black">
+                  <div className="text-[10px] text-slate-700 font-bold print:text-black">
                     Berlaku s.d. <b>{formatDate(sph.validUntil)}</b>
                   </div>
                 </div>

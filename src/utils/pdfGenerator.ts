@@ -75,8 +75,9 @@ export function generateDirectVectorSphPdf(
   let y = margin;
 
   // Header Box / Brand Kop (formal black and white, logo remains highlighted)
-  doc.setFillColor(15, 23, 42);
-  doc.rect(margin, y, contentWidth, 24, 'F');
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(15, 23, 42);
+  doc.rect(margin, y, contentWidth, 24, 'FD');
 
   // NJN Gold Monogram Box (logo tetap terlihat, sisanya hitam-putih)
   doc.setFillColor(212, 167, 71);
@@ -87,26 +88,27 @@ export function generateDirectVectorSphPdf(
   doc.text('NJN', margin + 12, y + 14, { align: 'center' });
 
   // Company Name & Tagline
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(15, 23, 42);
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.text(company.companyName || 'TOKO NIRWANA JAYA NUGRAHA', margin + 25, y + 8);
 
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(226, 232, 240);
+  doc.setTextColor(51, 65, 85);
   doc.text('Distributor Alat Listrik, Kabel Supreme, MCB & Fabrikasi Panel Listrik', margin + 25, y + 13);
   doc.text(`${company.address || 'Jl. Soekarno Hatta No. 488 Bandung'} | Telp: ${company.phone || '(022) 731-8921'}`, margin + 25, y + 18);
 
-  // Right side of Kop: SPH Code Badge (formal monochrome)
-  doc.setFillColor(30, 41, 59);
-  doc.roundedRect(pageWidth - margin - 48, y + 4, 45, 16, 2, 2, 'F');
+  // Right side of Kop: SPH Code Badge (formal monochrome, no dark block behind text)
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(15, 23, 42);
+  doc.roundedRect(pageWidth - margin - 48, y + 4, 45, 16, 2, 2, 'FD');
   doc.setFontSize(7);
-  doc.setTextColor(212, 167, 71);
+  doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
   doc.text('NOMOR PENAWARAN (SPH)', pageWidth - margin - 25.5, y + 9, { align: 'center' });
   doc.setFontSize(9);
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(15, 23, 42);
   doc.text(sph.code, pageWidth - margin - 25.5, y + 16, { align: 'center' });
 
   y += 28;
@@ -249,18 +251,18 @@ export function generateDirectVectorSphPdf(
   const terbilangWidth = contentWidth - sumWidth - 4;
 
   // Terbilang Box
-  doc.setFillColor(254, 252, 232); // amber-50
-  doc.setDrawColor(254, 240, 138); // amber-200
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(148, 163, 184);
   doc.roundedRect(margin, y, terbilangWidth, 23, 2, 2, 'FD');
 
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(180, 83, 9); // amber-700
+  doc.setTextColor(15, 23, 42);
   doc.text('TERBILANG TOTAL PEMBAYARAN:', margin + 3, y + 5);
 
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bolditalic');
-  doc.setTextColor(30, 41, 59);
+  doc.setTextColor(15, 23, 42);
   const terbilangText = `"${terbilang(sph.totalAmount)}"`;
   const splitTerbilang = doc.splitTextToSize(terbilangText, terbilangWidth - 6);
   doc.text(splitTerbilang, margin + 3, y + 10);
@@ -268,38 +270,34 @@ export function generateDirectVectorSphPdf(
   // Totals Box (Right)
   const sumX = margin + terbilangWidth + 4;
   doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(226, 232, 240);
+  doc.setDrawColor(203, 213, 225);
   doc.roundedRect(sumX, y, sumWidth, 23, 2, 2, 'FD');
 
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(71, 85, 105);
+  doc.setTextColor(51, 65, 85);
   doc.text('Subtotal Barang:', sumX + 3, y + 5.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
   doc.text(formatRupiah(sph.subtotal), sumX + sumWidth - 3, y + 5.5, { align: 'right' });
 
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(71, 85, 105);
+  doc.setTextColor(51, 65, 85);
   const ppnLabel = sph.isPpn !== false ? `PPN (${sph.ppnRate || 11}%):` : 'PPN (Non-PPN):';
   doc.text(ppnLabel, sumX + 3, y + 11.5);
   doc.setFont('helvetica', 'bold');
-  if (sph.isPpn !== false) {
-    doc.setTextColor(22, 101, 52);
-  } else {
-    doc.setTextColor(71, 85, 105);
-  }
+  doc.setTextColor(15, 23, 42);
   doc.text(sph.isPpn !== false ? `+${formatRupiah(sph.ppnAmount)}` : 'Rp 0', sumX + sumWidth - 3, y + 11.5, { align: 'right' });
 
   // Divider line
-  doc.setDrawColor(203, 213, 225);
+  doc.setDrawColor(148, 163, 184);
   doc.line(sumX + 3, y + 14.5, sumX + sumWidth - 3, y + 14.5);
 
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
   doc.text('TOTAL SPH:', sumX + 3, y + 19.5);
-  doc.setTextColor(180, 83, 9);
+  doc.setTextColor(15, 23, 42);
   doc.text(formatRupiah(sph.totalAmount), sumX + sumWidth - 3, y + 19.5, { align: 'right' });
 
   y += 27;
@@ -595,6 +593,91 @@ export function printHtmlViaIframeFixed(
       height: ${isThermal ? 'auto' : '100vh'};
       overflow: ${isThermal ? 'visible' : 'hidden'};
       page-break-inside: ${isThermal ? 'auto' : 'avoid'};
+      background: #ffffff !important;
+      color: #111827 !important;
+    }
+    .print-container *,
+    .print-container *::before,
+    .print-container *::after {
+      color: #111827 !important;
+      background-color: transparent !important;
+      border-color: rgba(17, 24, 39, 0.8) !important;
+      box-shadow: none !important;
+    }
+    .print-container .bg-white,
+    .print-container .bg-slate-50,
+    .print-container .bg-slate-100,
+    .print-container .bg-slate-200,
+    .print-container .bg-slate-300,
+    .print-container .bg-slate-800,
+    .print-container .bg-slate-900,
+    .print-container .bg-amber-50,
+    .print-container .bg-amber-100,
+    .print-container .bg-emerald-50,
+    .print-container .bg-emerald-100,
+    .print-container .bg-blue-50,
+    .print-container .bg-blue-100,
+    .print-container .bg-rose-50,
+    .print-container .bg-rose-100,
+    .print-container .bg-slate-950 {
+      background-color: #ffffff !important;
+    }
+    .print-container .text-slate-300,
+    .print-container .text-slate-400,
+    .print-container .text-slate-500,
+    .print-container .text-slate-600,
+    .print-container .text-slate-700,
+    .print-container .text-slate-800,
+    .print-container .text-slate-900,
+    .print-container .text-slate-950,
+    .print-container .text-amber-500,
+    .print-container .text-amber-600,
+    .print-container .text-amber-700,
+    .print-container .text-amber-800,
+    .print-container .text-emerald-700,
+    .print-container .text-emerald-800,
+    .print-container .text-blue-700,
+    .print-container .text-blue-800,
+    .print-container .text-rose-700,
+    .print-container .text-rose-800 {
+      color: #111827 !important;
+    }
+    .print-container .text-amber-400,
+    .print-container .text-emerald-600,
+    .print-container .text-blue-600,
+    .print-container .text-rose-600 {
+      color: #111827 !important;
+    }
+    .print-container .border-slate-200,
+    .print-container .border-slate-300,
+    .print-container .border-slate-400,
+    .print-container .border-slate-700,
+    .print-container .border-slate-800,
+    .print-container .border-slate-900,
+    .print-container .border-amber-500,
+    .print-container .border-emerald-500,
+    .print-container .border-blue-500,
+    .print-container .border-rose-500 {
+      border-color: rgba(17, 24, 39, 0.8) !important;
+    }
+    .print-container .ring-amber-500,
+    .print-container .ring-slate-300,
+    .print-container .ring-slate-200,
+    .print-container .ring-emerald-500,
+    .print-container .ring-blue-500,
+    .print-container .ring-rose-500 {
+      box-shadow: none !important;
+      outline: none !important;
+    }
+    .print-container .njn-logo,
+    .print-container .njn-logo *,
+    .print-container [data-logo-root],
+    .print-container [data-logo-root] * {
+      color: inherit !important;
+      fill: inherit !important;
+      stroke: inherit !important;
+      filter: none !important;
+      opacity: 1 !important;
     }
     .print-container table {
       width: 100%;
